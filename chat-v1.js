@@ -1,3 +1,5 @@
+const MODEL_NAME = "deepseek-coder:6.7b";
+
 const readline = require("readline");
 
 const rl = readline.createInterface({
@@ -16,7 +18,7 @@ async function chat(userInput) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "llama3",
+      model: MODEL_NAME,
       messages,
       stream: false
     })

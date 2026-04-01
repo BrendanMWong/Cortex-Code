@@ -1,3 +1,5 @@
+const MODEL_NAME = "deepseek-coder:6.7b";
+
 const readline = require("readline");
 const fs = require("fs");
 const path = require("path");
@@ -146,7 +148,7 @@ ${userInput}
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "llama3",
+                    model: MODEL_NAME,
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: prompt }
