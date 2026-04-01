@@ -1,4 +1,4 @@
-const MODEL_NAME = "deepseek-coder:6.7b";
+const MODEL_NAME = "llama3";
 
 const readline = require("readline");
 
