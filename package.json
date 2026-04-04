@@ -2,20 +2,21 @@
   "name": "cortex-code-testing",
   "version": "1.0.0",
   "description": "llama3 model used",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "keywords": [],
+  "homepage": "https://github.com/BrendanMWong/Cortex-Code-Testing#readme",
+  "bugs": {
+    "url": "https://github.com/BrendanMWong/Cortex-Code-Testing/issues"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/BrendanMWong/Cortex-Code-Testing.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
+  "author": "",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/BrendanMWong/Cortex-Code-Testing/issues"
-  },
-  "homepage": "https://github.com/BrendanMWong/Cortex-Code-Testing#readme"
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  }
 }
