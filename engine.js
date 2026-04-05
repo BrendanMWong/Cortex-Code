@@ -15,7 +15,7 @@ let pendingEdits = [];
 let FILE_INDEX = [];
 
 // ===== CONFIG =====
-const MAX_FILES = 5;
+const MAX_FILES = 10;
 const MAX_CONTENT_PREVIEW = 300;
 
 // ===== SET ROOT =====

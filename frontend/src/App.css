@@ -32,6 +32,7 @@
   line-height: 1.6;
   box-sizing: border-box;
   border-bottom: 1px solid var(--border);
+  text-align: left;
 }
 
 /* INPUT BAR */
