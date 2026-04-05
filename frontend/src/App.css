@@ -400,7 +400,7 @@ textarea,
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px;
+  padding: 24px;
 }
 
 .helpHeader {
@@ -408,6 +408,7 @@ textarea,
   justify-content: space-between;
   font-weight: 600;
   margin-bottom: 12px;
+  font-size: 30px;
 }
 
 .closeBtn {

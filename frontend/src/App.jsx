@@ -162,16 +162,48 @@ function App() {
       {showHelp && (
         <div className="helpOverlay" onClick={() => setShowHelp(false)}>
           <div className="helpModal" onClick={(e) => e.stopPropagation()}>
-            <div className="helpHeader">
+
+            {/* Centered title */}
+            <div className="helpHeader" style={{ justifyContent: "center" }}>
               <span>Help</span>
-              <button className="closeBtn" onClick={() => setShowHelp(false)}>×</button>
             </div>
 
-            <div>
-              <p><strong>Chat:</strong> Ask questions or request code changes.</p>
-              <p><strong>Edit:</strong> Propose structured file edits.</p>
-              <p><strong>Copy:</strong> Click the copy icon on any message.</p>
-              <p><strong>Workspace Root:</strong> Set the base folder for edits.</p>
+            {/* Left-aligned content */}
+            <div style={{ textAlign: "left", lineHeight: 1.6 }}>
+              <p>
+                <strong>Description:</strong><br />
+                This is an AI agent that can read your project folder and help you answer questions and write code. 
+                There are no monetary costs while using this AI assistant. 
+              </p>
+
+              <p>
+                <strong>Chat Button:</strong><br />
+                Ask the AI anything. The AI will not edit your codebase.<br />
+                Example: <em>"What is your favorite file in the codebase?"</em>
+              </p>
+
+              <p>
+                <strong>Edit Button:</strong><br />
+                Command the AI to make changes to your codebase. 
+                This lets the AI suggest changes to your files first, before applying them.
+              </p>
+
+              <p>
+                <strong>Workspace Root:</strong><br />
+                This is the folder where your project lives on your computer.<br />
+                Example path:<br />
+                <code>C:\Users\YourName\foldername\foldername2</code><br />
+              </p>
+
+              <p>
+                <strong>Copy Icon:</strong><br />
+                Click the copy icon to copy any message to your clipboard.
+              </p>
+
+              <p>
+                <strong>Important:</strong><br />
+                The AI cannot access your whole computer. It only works with the files inside the workspace you provide.
+              </p>
             </div>
           </div>
         </div>
@@ -188,7 +220,6 @@ function App() {
                   {msg.content}
                 </div>
 
-                {/* COPY OUTSIDE (BOTTOM RIGHT) */}
                 <div className="messageActions right">
                   <div className="copyWrapper">
                     <button
@@ -213,7 +244,6 @@ function App() {
                   {msg.content}
                 </ReactMarkdown>
 
-                {/* ASSISTANT COPY (OUTSIDE CONTENT BLOCK) */}
                 <div className="messageActions left">
                   <div className="copyWrapper">
                     <button
@@ -223,8 +253,7 @@ function App() {
                       <svg width="16" height="16" viewBox="0 0 24 24">
                         <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55" />
                         <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.3" />
-                      </svg>
-                    </button>
+                      </svg>                    </button>
 
                     <div className="copyTooltip">
                       {copiedIndex === i ? "Copied" : "Copy response"}
