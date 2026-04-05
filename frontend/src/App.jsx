@@ -10,11 +10,15 @@ function App() {
   const [rootPath, setRootPath] = useState("")
   const [rootStatus, setRootStatus] = useState(null) // NEW
 
+  // NEW
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
+
   const chatEndRef = useRef(null)
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, isLoading])
 
   async function setRoot(path) {
     const res = await fetch("http://localhost:3001/set-root", {
@@ -46,24 +50,37 @@ function App() {
     if (!input.trim()) return
 
     setEdits(null)
+    setError(null) // NEW
 
     const userMessage = { role: "user", content: input }
     setMessages(prev => [...prev, userMessage])
 
-    const res = await fetch("http://localhost:3001/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input })
-    })
+    setIsLoading(true) // NEW
 
-    const data = await res.json()
+    try {
+      const res = await fetch("http://localhost:3001/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input })
+      })
 
-    const aiMessage = {
-      role: "assistant",
-      content: data.reply || data.error
+      if (!res.ok) {
+        throw new Error("Request failed")
+      }
+
+      const data = await res.json()
+
+      const aiMessage = {
+        role: "assistant",
+        content: data.reply || data.error || "No response"
+      }
+
+      setMessages(prev => [...prev, aiMessage])
+    } catch (err) {
+      setError("AI failed to respond") // NEW
     }
 
-    setMessages(prev => [...prev, aiMessage])
+    setIsLoading(false) // NEW
     setInput("")
   }
 
@@ -114,6 +131,20 @@ function App() {
             )}
           </div>
         ))}
+
+        {/* NEW: THINKING STATE */}
+        {isLoading && (
+          <div className="assistantMessage">
+            Thinking...
+          </div>
+        )}
+
+        {/* NEW: ERROR STATE */}
+        {error && (
+          <div className="assistantMessage" style={{ color: "red" }}>
+            {error}
+          </div>
+        )}
 
         <div ref={chatEndRef} />
       </div>
@@ -168,7 +199,7 @@ function App() {
           Update Root
         </button>
 
-        {/* NEW STATUS UI */}
+        {/* STATUS UI */}
         {rootStatus && (
           <div className={`rootStatus ${rootStatus.type}`}>
             {rootStatus.message}
