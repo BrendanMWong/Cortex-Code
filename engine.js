@@ -12,6 +12,7 @@ const MODEL_NAME = "llama3";
 let ACTIVE_ROOT = null;
 let lastSelectedFiles = [];
 let pendingEdits = [];
+let FILE_INDEX = [];
 
 // ===== CONFIG =====
 const MAX_FILES = 5;
@@ -28,7 +29,58 @@ function setRoot(folderPath) {
     }
 
     ACTIVE_ROOT = path.resolve(folderPath);
+
+    FILE_INDEX = buildFileIndex(ACTIVE_ROOT);
+
     return { ok: true };
+}
+
+// ===== FILE INDEX =====
+function buildFileIndex(dir, prefix = "") {
+    let lines = [];
+
+    const items = fs.readdirSync(dir).sort();
+
+    for (const item of items) {
+        const fullPath = path.join(dir, item);
+        const stat = fs.statSync(fullPath);
+        const relative = path.join(prefix, item);
+
+        if (stat.isDirectory()) {
+            lines.push(`[DIR] ${relative}`);
+            lines = lines.concat(buildFileIndex(fullPath, relative));
+        } else {
+            lines.push(`[FILE] ${relative}`);
+        }
+    }
+
+    return lines;
+}
+
+// ===== EXPLICIT FILE DETECTION =====
+function extractExplicitFiles(text) {
+    const matches = text.match(/\b[\w\-.\/]+\.\w+\b/g);
+    return matches || [];
+}
+
+// ===== INTENT CLASSIFIER =====
+function classifyIntent(text) {
+    const lower = text.toLowerCase();
+
+    const signals = ["file", "files", "folder", "directory", "structure", "tree", "list", "show"];
+
+    let score = 0;
+    for (const s of signals) {
+        if (lower.includes(s)) score++;
+    }
+
+    if (score >= 2) return "file_list";
+
+    if (text.match(/\b[\w\-.\/]+\.\w+\b/)) {
+        return "file_search";
+    }
+
+    return null;
 }
 
 // ===== SAFETY =====
@@ -146,7 +198,7 @@ function validateEdits(data) {
     );
 }
 
-// ===== APPLY EDITS (SAFE) =====
+// ===== APPLY EDITS =====
 function applyEdits(edits) {
     const allowed = new Set(lastSelectedFiles.map(f => path.resolve(f.path)));
 
@@ -181,11 +233,24 @@ function applyEdits(edits) {
     return { ok: true };
 }
 
-// ===== RUN EDIT FLOW =====
+// ===== EDIT FLOW =====
 async function runEditFlow(userText) {
     if (!ACTIVE_ROOT) throw new Error("Root not set");
 
-    const files = scoreFiles(userText);
+    const explicit = extractExplicitFiles(userText);
+
+    let files;
+
+    if (explicit.length > 0) {
+        const all = readFolder(ACTIVE_ROOT);
+        files = all.filter(f =>
+            explicit.some(p =>
+                f.path.toLowerCase().endsWith(p.toLowerCase())
+            )
+        );
+    } else {
+        files = scoreFiles(userText);
+    }
 
     if (files.length === 0) {
         return { error: "No relevant files found." };
@@ -235,10 +300,45 @@ Return ONLY JSON:
     };
 }
 
-// ===== CHAT =====
+// ===== CHAT (FINAL FIX) =====
 async function runChat(userText) {
     if (!ACTIVE_ROOT) throw new Error("Root not set");
 
+    const lower = userText.toLowerCase();
+    const intent = classifyIntent(userText);
+    const explicit = extractExplicitFiles(userText);
+
+    // 🔥 STRONG deterministic file list
+    if (
+        intent === "file_list" ||
+        (
+            lower.includes("everything") &&
+            (lower.includes("codebase") || lower.includes("project"))
+        )
+    ) {
+        return { reply: FILE_INDEX.join("\n") };
+    }
+
+    // 🔥 deterministic file read
+    if (explicit.length > 0) {
+        const all = readFolder(ACTIVE_ROOT);
+
+        const matches = all.filter(f =>
+            explicit.some(p =>
+                f.path.toLowerCase().endsWith(p.toLowerCase())
+            )
+        );
+
+        if (matches.length > 0) {
+            return {
+                reply: matches.map(f =>
+                    `=== ${f.path} ===\n${f.content}`
+                ).join("\n\n")
+            };
+        }
+    }
+
+    // fallback AI
     const files = scoreFiles(userText);
 
     if (files.length === 0) {
@@ -255,7 +355,7 @@ async function runChat(userText) {
     return { reply: reply || "AI failed to respond" };
 }
 
-// ===== GET PENDING EDITS =====
+// ===== GET PENDING =====
 function getPendingEdits() {
     return pendingEdits;
 }
