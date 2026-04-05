@@ -417,3 +417,37 @@ textarea,
   font-size: 18px;
   cursor: pointer;
 }
+
+.modalCloseBtn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  width: 32px;
+  height: 32px;
+
+  border-radius: 50%;
+  border: none;
+
+  background: #ef4444;
+  color: white;
+
+  font-size: 18px;
+  font-weight: bold;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: background 0.15s ease;
+}
+
+.modalCloseBtn:hover {
+  background: #dc2626;
+}
+
+.modalWithClose {
+  position: relative;
+}

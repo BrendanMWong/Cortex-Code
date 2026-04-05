@@ -161,7 +161,15 @@ function App() {
       {/* HELP MODAL */}
       {showHelp && (
         <div className="helpOverlay" onClick={() => setShowHelp(false)}>
-          <div className="helpModal" onClick={(e) => e.stopPropagation()}>
+          <div className="helpModal modalWithClose" onClick={(e) => e.stopPropagation()}>
+
+            {/* Red close button */}
+            <button
+              className="modalCloseBtn"
+              onClick={() => setShowHelp(false)}
+            >
+              ×
+            </button>
 
             {/* Centered title */}
             <div className="helpHeader" style={{ justifyContent: "center" }}>
@@ -172,8 +180,8 @@ function App() {
             <div style={{ textAlign: "left", lineHeight: 1.6 }}>
               <p>
                 <strong>Description:</strong><br />
-                This is an AI agent that can read your project folder and help you answer questions and write code. 
-                There are no monetary costs while using this AI assistant. 
+                This is an AI agent that can read your project folder and help you answer questions and write code.
+                There are no monetary costs while using this AI assistant.
               </p>
 
               <p>
@@ -184,7 +192,7 @@ function App() {
 
               <p>
                 <strong>Edit Button:</strong><br />
-                Command the AI to make changes to your codebase. 
+                Command the AI to make changes to your codebase.
                 This lets the AI suggest changes to your files first, before applying them.
               </p>
 
