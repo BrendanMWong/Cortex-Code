@@ -52,6 +52,16 @@ app.post("/apply-edits", (req, res) => {
     }
 });
 
+// ===== REJECT EDITS (NEW) =====
+app.post("/reject-edits", (req, res) => {
+    try {
+        engine.clearPendingEdits();
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // ===== START =====
 app.listen(3001, () => {
     console.log("Server running on http://localhost:3001");

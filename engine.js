@@ -366,5 +366,12 @@ module.exports = {
     runChat,
     runEditFlow,
     applyEdits,
-    getPendingEdits
+    getPendingEdits,
+    clearPendingEdits
 };
+
+// ===== CLEAR PENDING =====
+function clearPendingEdits() {
+    pendingEdits = [];
+    lastSelectedFiles = [];
+}

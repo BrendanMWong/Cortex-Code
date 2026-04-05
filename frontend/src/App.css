@@ -55,6 +55,8 @@ textarea {
 
 .actions {
   display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 8px;
   margin-top: 8px;
 }
@@ -107,16 +109,6 @@ textarea {
   padding: 8px;
   border-radius: 6px;
   overflow-x: auto;
-}
-
-.applyBtn {
-  margin-top: 10px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: none;
-  background: var(--accent);
-  color: white;
-  cursor: pointer;
 }
 
 /* ROOT SECTION */
@@ -295,4 +287,37 @@ pre {
 /* align assistant row full width */
 .messageRow .assistantMessage {
   align-self: stretch;
+}
+
+/* EDIT ACTIONS (CENTERED) */
+.editActions {
+  display: flex;
+  justify-content: center; /* ✅ center horizontally */
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* BASE BUTTON STYLE (shared) */
+.applyBtn,
+.rejectBtn {
+  padding: 8px 16px; /* ✅ identical sizing */
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  min-width: 140px; /* ✅ forces equal width */
+  text-align: center;
+}
+
+/* APPLY = GREEN */
+.applyBtn {
+  background: #22c55e; /* green */
+  color: white;
+}
+
+/* REJECT = RED */
+.rejectBtn {
+  background: #ef4444; /* solid red (cleaner than transparent) */
+  color: white;
 }

@@ -126,6 +126,23 @@ function App() {
     }
   }
 
+  async function rejectEdits() {
+    try {
+      await fetch("http://localhost:3001/reject-edits", {
+        method: "POST"
+      })
+
+      setEdits(null)
+
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "❌ Changes rejected"
+      }])
+    } catch (e) {
+      console.error("Reject failed", e)
+    }
+  }
+
   return (
     <div className="appContainer">
 
@@ -148,7 +165,7 @@ function App() {
                       onClick={() => handleCopy(msg.content, i)}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24">
-                        <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55"/>
+                        <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55" />
                         <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.3" />
                       </svg>
                     </button>
@@ -173,7 +190,7 @@ function App() {
                       onClick={() => handleCopy(msg.content, i)}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24">
-                        <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55"/>
+                        <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55" />
                         <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.3" />
                       </svg>
                     </button>
@@ -216,9 +233,15 @@ function App() {
             </div>
           ))}
 
-          <button className="applyBtn" onClick={applyEdits}>
-            Apply Changes
-          </button>
+          <div className="editActions">
+            <button className="applyBtn" onClick={applyEdits}>
+              Apply Changes
+            </button>
+
+            <button className="rejectBtn" onClick={rejectEdits}>
+              Reject Changes
+            </button>
+          </div>
         </div>
       )}
 
