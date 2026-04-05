@@ -10,8 +10,7 @@ app.use(express.json());
 // ===== SET ROOT =====
 app.post("/set-root", (req, res) => {
     try {
-        const { path } = req.body;
-        engine.setRoot(path);
+        engine.setRoot(req.body.path);
         res.json({ ok: true });
     } catch (e) {
         res.status(400).json({ error: e.message });
@@ -21,19 +20,32 @@ app.post("/set-root", (req, res) => {
 // ===== CHAT =====
 app.post("/chat", async (req, res) => {
     try {
-        const { message } = req.body;
-        const result = await engine.runChat(message);
+        const result = await engine.runChat(req.body.message);
         res.json(result);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
-// ===== EDIT =====
+// ===== EDIT (PROPOSE) =====
 app.post("/edit", async (req, res) => {
     try {
-        const { message } = req.body;
-        const result = await engine.runEditFlow(message);
+        const result = await engine.runEditFlow(req.body.message);
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ===== GET PENDING =====
+app.get("/pending-edits", (req, res) => {
+    res.json({ edits: engine.getPendingEdits() });
+});
+
+// ===== APPLY EDITS =====
+app.post("/apply-edits", (req, res) => {
+    try {
+        const result = engine.applyEdits(req.body.edits);
         res.json(result);
     } catch (e) {
         res.status(500).json({ error: e.message });

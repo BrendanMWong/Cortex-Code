@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 
-// Fallback for Node versions
 let fetchFn = global.fetch;
 if (!fetchFn) {
     fetchFn = require("node-fetch");
@@ -12,9 +11,11 @@ const MODEL_NAME = "llama3";
 // ===== STATE =====
 let ACTIVE_ROOT = null;
 let lastSelectedFiles = [];
+let pendingEdits = [];
 
 // ===== CONFIG =====
 const MAX_FILES = 5;
+const MAX_CONTENT_PREVIEW = 300;
 
 // ===== SET ROOT =====
 function setRoot(folderPath) {
@@ -28,6 +29,24 @@ function setRoot(folderPath) {
 
     ACTIVE_ROOT = path.resolve(folderPath);
     return { ok: true };
+}
+
+// ===== SAFETY =====
+function isSafePath(filePath) {
+    const resolved = path.resolve(filePath);
+    const root = path.resolve(ACTIVE_ROOT);
+    return resolved.startsWith(root) && !resolved.includes("..");
+}
+
+function toRealPath(vPath) {
+    const cleaned = vPath.replace(/^\/+/, "");
+    const resolved = path.resolve(ACTIVE_ROOT, cleaned);
+
+    if (!resolved.startsWith(path.resolve(ACTIVE_ROOT))) {
+        throw new Error("Path traversal detected");
+    }
+
+    return resolved;
 }
 
 // ===== FILE SYSTEM =====
@@ -58,7 +77,7 @@ function buildContext(files) {
         .join("\n\n");
 }
 
-// ===== SIMPLE SCORING =====
+// ===== SCORING =====
 function scoreFiles(userInput) {
     const files = readFolder(ACTIVE_ROOT);
     const input = userInput.toLowerCase();
@@ -85,7 +104,7 @@ function scoreFiles(userInput) {
         .filter(f => f.score > 0);
 }
 
-// ===== AI CALL =====
+// ===== AI =====
 async function callAI(systemPrompt, userPrompt) {
     try {
         const res = await fetchFn("http://localhost:11434/api/chat", {
@@ -97,47 +116,72 @@ async function callAI(systemPrompt, userPrompt) {
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userPrompt }
                 ],
-                stream: false
+                stream: false,
+                options: { temperature: 0 }
             })
         });
 
         const data = await res.json();
-
-        if (!data.message || !data.message.content) {
-            throw new Error("Invalid Ollama response");
-        }
-
         return data.message.content;
 
-    } catch (e) {
-        console.error("Ollama error:", e.message);
+    } catch {
         return null;
     }
 }
 
-// ===== MAIN CHAT =====
-async function runChat(userText) {
-    if (!ACTIVE_ROOT) throw new Error("Root not set");
-
-    const files = scoreFiles(userText);
-
-    if (files.length === 0) {
-        return { reply: "No relevant files found." };
-    }
-
-    lastSelectedFiles = files;
-
-    const context = buildContext(files);
-
-    const reply = await callAI(
-        "You are a helpful coding assistant.",
-        `FILES:\n${files.map(f => f.path).join("\n")}\n\nCONTENT:\n${context}\n\nUser: ${userText}`
-    );
-
-    return { reply: reply || "AI failed to respond" };
+// ===== EDIT PARSER =====
+function extractJSON(text) {
+    const match = text.match(/\{[\s\S]*\}/);
+    return match ? match[0] : null;
 }
 
-// ===== EDIT FLOW =====
+function validateEdits(data) {
+    if (!data) return false;
+    if (data.mode !== "edit") return false;
+    if (!Array.isArray(data.edits)) return false;
+
+    return data.edits.every(e =>
+        e.path && e.action &&
+        ["replace", "create", "append", "delete"].includes(e.action)
+    );
+}
+
+// ===== APPLY EDITS (SAFE) =====
+function applyEdits(edits) {
+    const allowed = new Set(lastSelectedFiles.map(f => path.resolve(f.path)));
+
+    for (const edit of edits) {
+        let fullPath;
+
+        try {
+            fullPath = toRealPath(edit.path);
+        } catch {
+            continue;
+        }
+
+        if (!isSafePath(fullPath)) continue;
+
+        if (edit.action !== "create" && !allowed.has(fullPath)) continue;
+
+        try {
+            if (edit.action === "delete") {
+                fs.unlinkSync(fullPath);
+            } else if (edit.action === "append") {
+                fs.appendFileSync(fullPath, edit.content || "", "utf-8");
+            } else if (edit.action === "create") {
+                fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+                fs.writeFileSync(fullPath, edit.content || "", "utf-8");
+            } else if (edit.action === "replace") {
+                fs.writeFileSync(fullPath, edit.content || "", "utf-8");
+            }
+        } catch {}
+    }
+
+    pendingEdits = [];
+    return { ok: true };
+}
+
+// ===== RUN EDIT FLOW =====
 async function runEditFlow(userText) {
     if (!ACTIVE_ROOT) throw new Error("Root not set");
 
@@ -160,7 +204,7 @@ Return ONLY JSON:
   "edits": [
     {
       "path": "file path",
-      "action": "replace",
+      "action": "replace | create | append | delete",
       "content": "text"
     }
   ]
@@ -169,23 +213,58 @@ Return ONLY JSON:
 
     const reply = await callAI(systemPrompt, `${context}\n\n${userText}`);
 
-    if (!reply) {
-        return { error: "AI failed" };
-    }
+    if (!reply) return { error: "AI failed" };
 
     let parsed;
     try {
-        parsed = JSON.parse(reply);
+        const json = extractJSON(reply);
+        parsed = JSON.parse(json);
     } catch {
         return { error: "Invalid JSON from AI" };
     }
 
-    return { ok: true, edits: parsed.edits || [] };
+    if (!validateEdits(parsed)) {
+        return { error: "Invalid edit format" };
+    }
+
+    pendingEdits = parsed.edits;
+
+    return {
+        ok: true,
+        edits: pendingEdits
+    };
+}
+
+// ===== CHAT =====
+async function runChat(userText) {
+    if (!ACTIVE_ROOT) throw new Error("Root not set");
+
+    const files = scoreFiles(userText);
+
+    if (files.length === 0) {
+        return { reply: "No relevant files found." };
+    }
+
+    const context = buildContext(files);
+
+    const reply = await callAI(
+        "You are a helpful coding assistant.",
+        `CONTENT:\n${context}\n\nUser: ${userText}`
+    );
+
+    return { reply: reply || "AI failed to respond" };
+}
+
+// ===== GET PENDING EDITS =====
+function getPendingEdits() {
+    return pendingEdits;
 }
 
 // ===== EXPORTS =====
 module.exports = {
     setRoot,
     runChat,
-    runEditFlow
+    runEditFlow,
+    applyEdits,
+    getPendingEdits
 };
