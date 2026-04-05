@@ -46,3 +46,5 @@ Conversation history is maintained during the session
 
 ### 4. Stopping the program
 Press: Ctrl + C
+
+npm install react-markdown remark-gfm

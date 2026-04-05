@@ -1,12 +1,19 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './App.css'
 
 function App() {
   const [input, setInput] = useState("")
-  const [output, setOutput] = useState("")
+  const [messages, setMessages] = useState([])
   const [edits, setEdits] = useState(null)
-
   const [rootPath, setRootPath] = useState("")
+
+  const chatEndRef = useRef(null)
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
   async function setRoot(path) {
     await fetch("http://localhost:3001/set-root", {
@@ -22,7 +29,12 @@ function App() {
   }
 
   async function sendChat() {
+    if (!input.trim()) return
+
     setEdits(null)
+
+    const userMessage = { role: "user", content: input }
+    setMessages(prev => [...prev, userMessage])
 
     const res = await fetch("http://localhost:3001/chat", {
       method: "POST",
@@ -31,7 +43,14 @@ function App() {
     })
 
     const data = await res.json()
-    setOutput(data.reply || data.error)
+
+    const aiMessage = {
+      role: "assistant",
+      content: data.reply || data.error
+    }
+
+    setMessages(prev => [...prev, aiMessage])
+    setInput("")
   }
 
   async function sendEdit() {
@@ -45,9 +64,6 @@ function App() {
 
     if (data.edits) {
       setEdits(data.edits)
-      setOutput("Review changes below")
-    } else {
-      setOutput(data.error)
     }
   }
 
@@ -59,32 +75,42 @@ function App() {
     })
 
     setEdits(null)
-    setOutput("✅ Changes applied")
+    setMessages(prev => [...prev, {
+      role: "assistant",
+      content: "✅ Changes applied"
+    }])
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>AI Code Engine</h1>
+    <div className="appContainer">
 
-      <textarea
-        rows={4}
-        style={{ width: "100%" }}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-      />
+      {/* CHAT STREAM */}
+      <div className="chatStream">
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={msg.role === "user" ? "userBubble" : "assistantMessage"}
+          >
+            {msg.role === "assistant" ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {msg.content}
+              </ReactMarkdown>
+            ) : (
+              msg.content
+            )}
+          </div>
+        ))}
 
-      <div style={{ marginTop: 10 }}>
-        <button onClick={sendChat}>Chat</button>
-        <button onClick={sendEdit}>Edit</button>
+        <div ref={chatEndRef} />
       </div>
 
       {/* EDIT PREVIEW */}
       {edits && (
-        <div style={{ marginTop: 20 }}>
+        <div className="editPanel">
           <h3>Proposed Changes</h3>
 
           {edits.map((e, i) => (
-            <div key={i} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
+            <div key={i} className="editItem">
               <b>{e.path}</b> — {e.action}
               <pre>{(e.content || "").slice(0, 200)}</pre>
             </div>
@@ -94,24 +120,35 @@ function App() {
         </div>
       )}
 
-      <pre style={{ marginTop: 20 }}>
-        {output}
-      </pre>
+      {/* INPUT BAR */}
+      <div className="inputBar">
+        <textarea
+          rows={3}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type a message..."
+        />
 
-      {/* ROOT */}
-      <div style={{ marginTop: 30 }}>
+        <div className="actions">
+          <button className="chatBtn" onClick={sendChat}>Chat</button>
+          <button className="editBtn" onClick={sendEdit}>Edit</button>
+        </div>
+      </div>
+
+      {/* WORKSPACE ROOT */}
+      <div className="rootSection">
         <h3>Workspace Root</h3>
 
         <input
           value={rootPath}
           onChange={(e) => setRootPath(e.target.value)}
-          style={{ width: "100%" }}
         />
 
         <button onClick={handleUpdateRoot}>
           Update Root
         </button>
       </div>
+
     </div>
   )
 }
