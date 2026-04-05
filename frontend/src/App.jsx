@@ -8,11 +8,13 @@ function App() {
   const [messages, setMessages] = useState([])
   const [edits, setEdits] = useState(null)
   const [rootPath, setRootPath] = useState("")
-  const [rootStatus, setRootStatus] = useState(null) // NEW
+  const [rootStatus, setRootStatus] = useState(null)
 
-  // NEW
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  // NEW: track copied message
+  const [copiedIndex, setCopiedIndex] = useState(null)
 
   const chatEndRef = useRef(null)
 
@@ -50,12 +52,12 @@ function App() {
     if (!input.trim()) return
 
     setEdits(null)
-    setError(null) // NEW
+    setError(null)
 
     const userMessage = { role: "user", content: input }
     setMessages(prev => [...prev, userMessage])
 
-    setIsLoading(true) // NEW
+    setIsLoading(true)
 
     try {
       const res = await fetch("http://localhost:3001/chat", {
@@ -77,10 +79,10 @@ function App() {
 
       setMessages(prev => [...prev, aiMessage])
     } catch (err) {
-      setError("AI failed to respond") // NEW
+      setError("AI failed to respond")
     }
 
-    setIsLoading(false) // NEW
+    setIsLoading(false)
     setInput("")
   }
 
@@ -112,34 +114,84 @@ function App() {
     }])
   }
 
+  // NEW: copy handler
+  async function handleCopy(text, index) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedIndex(index)
+
+      setTimeout(() => setCopiedIndex(null), 1200)
+    } catch (e) {
+      console.error("Copy failed", e)
+    }
+  }
+
   return (
     <div className="appContainer">
 
       {/* CHAT STREAM */}
       <div className="chatStream">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={msg.role === "user" ? "userBubble" : "assistantMessage"}
-          >
-            {msg.role === "assistant" ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {msg.content}
-              </ReactMarkdown>
+          <div key={i} className="messageRow">
+
+            {msg.role === "user" ? (
+              <>
+                <div className="userBubble">
+                  {msg.content}
+                </div>
+
+                {/* COPY OUTSIDE (BOTTOM RIGHT) */}
+                <div className="messageActions right">
+                  <div className="copyWrapper">
+                    <button
+                      className="copyBtn"
+                      onClick={() => handleCopy(msg.content, i)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24">
+                        <rect x="9" y="9" width="10" height="10" rx="2" />
+                        <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.6" />
+                      </svg>
+                    </button>
+
+                    <div className="copyTooltip">
+                      {copiedIndex === i ? "Copied" : "Copy message"}
+                    </div>
+                  </div>
+                </div>
+              </>
             ) : (
-              msg.content
+              <div className="assistantMessage">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
+
+                {/* ASSISTANT COPY (OUTSIDE CONTENT BLOCK) */}
+                <div className="messageActions left">
+                  <div className="copyWrapper">
+                    <button
+                      className="copyBtn"
+                      onClick={() => handleCopy(msg.content, i)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24">
+                        <rect x="9" y="9" width="10" height="10" rx="2" />
+                        <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.6" />
+                      </svg>
+                    </button>
+
+                    <div className="copyTooltip">
+                      {copiedIndex === i ? "Copied" : "Copy response"}
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         ))}
 
-        {/* NEW: THINKING STATE */}
         {isLoading && (
-          <div className="assistantMessage">
-            Thinking...
-          </div>
+          <div className="assistantMessage">Thinking...</div>
         )}
 
-        {/* NEW: ERROR STATE */}
         {error && (
           <div className="assistantMessage" style={{ color: "red" }}>
             {error}
@@ -149,7 +201,7 @@ function App() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* EDIT PREVIEW */}
+      {/* EDIT PANEL */}
       {edits && (
         <div className="editPanel">
           <div className="panelHeader">Proposed Changes</div>
@@ -199,7 +251,6 @@ function App() {
           Update Root
         </button>
 
-        {/* STATUS UI */}
         {rootStatus && (
           <div className={`rootStatus ${rootStatus.type}`}>
             {rootStatus.message}

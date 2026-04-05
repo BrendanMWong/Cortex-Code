@@ -195,3 +195,93 @@ pre {
 .userBubble {
   white-space: pre-wrap;
 }
+
+/* COPY UI */
+
+/* Make assistant message a vertical stack so button sits under text */
+.assistantMessage {
+  display: flex;
+  flex-direction: column;
+}
+
+/* base */
+.messageActions {
+  display: flex;
+  margin-top: 6px;
+}
+
+/* assistant = left */
+.messageActions.left {
+  justify-content: flex-start;
+}
+
+/* user = right */
+.messageActions.right {
+  justify-content: flex-end;
+}
+
+/* wrapper handles hover state */
+.copyWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+/* button styling */
+.copyBtn {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* darken on hover */
+.copyBtn:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* tooltip hidden by default */
+.copyTooltip {
+  position: absolute;
+  top: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  white-space: nowrap;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+/* show tooltip ONLY on hover */
+.copyWrapper:hover .copyTooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* each message becomes a vertical stack */
+.messageRow {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* align user row to the right */
+.messageRow .userBubble {
+  align-self: flex-end;
+}
+
+/* align assistant row full width */
+.messageRow .assistantMessage {
+  align-self: stretch;
+}
