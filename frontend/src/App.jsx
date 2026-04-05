@@ -146,6 +146,19 @@ function App() {
   return (
     <div className="appContainer">
 
+      {/* HEADER */}
+      <div className="appHeader">
+        <div className="headerLeft">
+          Cortex Code
+        </div>
+
+        <div className="headerRight">
+          <button className="helpBtn" onClick={() => alert("Help goes here")}>
+            Help
+          </button>
+        </div>
+      </div>
+
       {/* CHAT STREAM */}
       <div className="chatStream">
         {messages.map((msg, i) => (

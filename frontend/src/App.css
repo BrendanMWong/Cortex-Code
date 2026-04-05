@@ -1,7 +1,56 @@
+* {
+  box-sizing: border-box;
+}
+
 .appContainer {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  position: relative;
+  padding-top: 50px;
+}
+
+.appHeader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: 50px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0 16px;
+
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+
+  z-index: 1000; /* ensures it stays above chat */
+}
+
+.headerLeft {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+}
+
+.helpBtn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.helpBtn:hover {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 /* CHAT STREAM */
@@ -321,4 +370,16 @@ pre {
 .rejectBtn {
   background: #ef4444; /* solid red (cleaner than transparent) */
   color: white;
+}
+
+.inputBar,
+.rootSection {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+textarea,
+.rootSection input {
+  box-sizing: border-box;
+  max-width: 100%;
 }
