@@ -8,6 +8,7 @@ function App() {
   const [messages, setMessages] = useState([])
   const [edits, setEdits] = useState(null)
   const [rootPath, setRootPath] = useState("")
+  const [rootStatus, setRootStatus] = useState(null) // NEW
 
   const chatEndRef = useRef(null)
 
@@ -16,16 +17,29 @@ function App() {
   }, [messages])
 
   async function setRoot(path) {
-    await fetch("http://localhost:3001/set-root", {
+    const res = await fetch("http://localhost:3001/set-root", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path })
     })
+
+    return res
   }
 
   async function handleUpdateRoot() {
-    await setRoot(rootPath)
-    localStorage.setItem("rootPath", rootPath)
+    try {
+      const res = await setRoot(rootPath)
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Invalid path")
+      }
+
+      localStorage.setItem("rootPath", rootPath)
+      setRootStatus({ type: "success", message: "Root updated successfully" })
+    } catch (err) {
+      setRootStatus({ type: "error", message: err.message })
+    }
   }
 
   async function sendChat() {
@@ -107,16 +121,21 @@ function App() {
       {/* EDIT PREVIEW */}
       {edits && (
         <div className="editPanel">
-          <h3>Proposed Changes</h3>
+          <div className="panelHeader">Proposed Changes</div>
 
           {edits.map((e, i) => (
             <div key={i} className="editItem">
-              <b>{e.path}</b> — {e.action}
-              <pre>{(e.content || "").slice(0, 200)}</pre>
+              <div className="editPath">{e.path}</div>
+              <div className="editAction">{e.action}</div>
+              <pre className="editContent">
+                {(e.content || "").slice(0, 200)}
+              </pre>
             </div>
           ))}
 
-          <button onClick={applyEdits}>Apply Changes</button>
+          <button className="applyBtn" onClick={applyEdits}>
+            Apply Changes
+          </button>
         </div>
       )}
 
@@ -137,16 +156,24 @@ function App() {
 
       {/* WORKSPACE ROOT */}
       <div className="rootSection">
-        <h3>Workspace Root</h3>
+        <div className="panelHeader">Workspace Root</div>
 
         <input
           value={rootPath}
           onChange={(e) => setRootPath(e.target.value)}
+          placeholder="Enter project root path..."
         />
 
-        <button onClick={handleUpdateRoot}>
+        <button className="rootBtn" onClick={handleUpdateRoot}>
           Update Root
         </button>
+
+        {/* NEW STATUS UI */}
+        {rootStatus && (
+          <div className={`rootStatus ${rootStatus.type}`}>
+            {rootStatus.message}
+          </div>
+        )}
       </div>
 
     </div>

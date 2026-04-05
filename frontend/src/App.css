@@ -19,7 +19,7 @@
   align-self: flex-end;
   background: var(--accent-bg);
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 14px;
   max-width: 70%;
   color: var(--text-h);
 }
@@ -29,7 +29,7 @@
   align-self: flex-start;
   max-width: 70%;
   padding: 10px 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* INPUT BAR */
@@ -47,6 +47,8 @@ textarea {
   padding: 12px;
   resize: none;
   border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
 }
 
 .actions {
@@ -62,27 +64,100 @@ textarea {
   cursor: pointer;
   background: var(--accent);
   color: white;
+  font-weight: 500;
 }
 
 /* EDIT PANEL */
 .editPanel {
-  padding: 16px;
   border-top: 1px solid var(--border);
+  background: var(--code-bg);
+  padding: 16px;
+}
+
+.panelHeader {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-h);
 }
 
 .editItem {
   border: 1px solid var(--border);
+  border-radius: 10px;
   margin: 10px 0;
-  padding: 10px;
+  padding: 12px;
+  background: var(--bg);
+}
+
+.editPath {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.editAction {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+
+.editContent {
+  font-size: 12px;
+  background: var(--code-bg);
+  padding: 8px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.applyBtn {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
 }
 
 /* ROOT SECTION */
 .rootSection {
-  padding: 16px;
   border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 16px;
 }
 
 .rootSection input {
   width: 100%;
-  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  background: transparent;
+  color: var(--text-h);
+}
+
+.rootBtn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* ROOT STATUS */
+.rootStatus {
+  margin-top: 10px;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.rootStatus.success {
+  background: rgba(0, 200, 100, 0.15);
+  color: #4ade80;
+}
+
+.rootStatus.error {
+  background: rgba(255, 0, 0, 0.12);
+  color: #f87171;
 }
