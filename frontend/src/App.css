@@ -1,6 +1,15 @@
+/* =========================================================
+   GLOBAL RESET
+========================================================= */
+
 * {
   box-sizing: border-box;
 }
+
+
+/* =========================================================
+   LAYOUT CONTAINERS
+========================================================= */
 
 .appContainer {
   display: flex;
@@ -10,6 +19,11 @@
   padding-top: 50px;
 }
 
+
+/* =========================================================
+   HEADER
+========================================================= */
+
 .appHeader {
   position: fixed;
   top: 0;
@@ -17,17 +31,16 @@
   right: 0;
 
   height: 50px;
+  padding: 0 16px;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
 
-  padding: 0 16px;
-
   background: var(--bg);
   border-bottom: 1px solid var(--border);
 
-  z-index: 1000; /* ensures it stays above chat */
+  z-index: 1000;
 }
 
 .headerLeft {
@@ -53,7 +66,11 @@
   background: rgba(0, 0, 0, 0.1);
 }
 
-/* CHAT STREAM */
+
+/* =========================================================
+   CHAT STREAM
+========================================================= */
+
 .chatStream {
   flex: 1;
   overflow-y: auto;
@@ -63,14 +80,28 @@
   gap: 12px;
 }
 
-/* USER BUBBLE */
+
+/* =========================================================
+   MESSAGES (USER + ASSISTANT)
+========================================================= */
+
+.messageRow {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* USER MESSAGE */
 .userBubble {
   align-self: flex-end;
-  background: var(--accent-bg);
+  max-width: 70%;
   padding: 10px 14px;
   border-radius: 14px;
-  max-width: 70%;
+
+  background: var(--accent-bg);
   color: var(--text-h);
+
+  white-space: pre-wrap;
 }
 
 /* ASSISTANT MESSAGE */
@@ -78,29 +109,129 @@
   align-self: stretch;
   width: 100%;
   padding: 10px 14px;
-  line-height: 1.6;
-  box-sizing: border-box;
+
   border-bottom: 1px solid var(--border);
   text-align: left;
+  line-height: 1.6;
+
+  display: flex;
+  flex-direction: column;
 }
 
-/* INPUT BAR */
+/* alignment rules */
+.messageRow .userBubble {
+  align-self: flex-end;
+}
+
+.messageRow .assistantMessage {
+  align-self: stretch;
+}
+
+
+/* =========================================================
+   MESSAGE ACTIONS (COPY BUTTONS)
+========================================================= */
+
+.messageActions {
+  display: flex;
+  margin-top: 6px;
+}
+
+.messageActions.left {
+  justify-content: flex-start;
+}
+
+.messageActions.right {
+  justify-content: flex-end;
+}
+
+.messageActions.right .copyTooltip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.copyWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.copyBtn {
+  padding: 6px;
+  border: none;
+  border-radius: 6px;
+
+  background: transparent;
+  color: var(--text-h);
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copyBtn:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* tooltip */
+.copyTooltip {
+  position: absolute;
+  top: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  max-width: 200px;
+  padding: 4px 6px;
+
+  font-size: 11px;
+  border-radius: 6px;
+
+  background: var(--code-bg);
+  color: var(--text-h);
+
+  white-space: nowrap;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.copyWrapper:hover .copyTooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+
+/* =========================================================
+   INPUT BAR
+========================================================= */
+
 .inputBar {
   position: sticky;
   bottom: 0;
+
   padding: 12px;
+
   border-top: 1px solid var(--border);
   background: var(--bg);
 }
 
 textarea {
   width: 100%;
-  border-radius: 12px;
   padding: 12px;
-  resize: none;
+
+  border-radius: 12px;
   border: 1px solid var(--border);
+
   background: transparent;
   color: var(--text-h);
+
+  resize: none;
 }
 
 .actions {
@@ -108,24 +239,33 @@ textarea {
   justify-content: center;
   align-items: center;
   gap: 8px;
+
   margin-top: 8px;
 }
 
-.chatBtn, .editBtn {
+.chatBtn,
+.editBtn {
   padding: 8px 14px;
+
   border-radius: 999px;
   border: none;
-  cursor: pointer;
+
   background: var(--accent);
   color: white;
+
   font-weight: 500;
+  cursor: pointer;
 }
 
-/* EDIT PANEL */
+
+/* =========================================================
+   EDIT PANEL
+========================================================= */
+
 .editPanel {
+  padding: 16px;
   border-top: 1px solid var(--border);
   background: var(--code-bg);
-  padding: 16px;
 }
 
 .panelHeader {
@@ -135,10 +275,12 @@ textarea {
 }
 
 .editItem {
-  border: 1px solid var(--border);
-  border-radius: 10px;
   margin: 10px 0;
   padding: 12px;
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
   background: var(--bg);
 }
 
@@ -155,44 +297,102 @@ textarea {
 
 .editContent {
   font-size: 12px;
-  background: var(--code-bg);
+
   padding: 8px;
   border-radius: 6px;
+
+  background: var(--code-bg);
+
   overflow-x: auto;
+  white-space: pre-wrap;
 }
 
-/* ROOT SECTION */
+
+/* =========================================================
+   EDIT ACTION BUTTONS
+========================================================= */
+
+.editActions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+
+  margin-top: 12px;
+}
+
+.applyBtn,
+.rejectBtn {
+  padding: 8px 16px;
+  min-width: 140px;
+
+  border-radius: 999px;
+  border: none;
+
+  font-weight: 500;
+  text-align: center;
+
+  cursor: pointer;
+}
+
+.applyBtn {
+  background: #22c55e;
+  color: white;
+}
+
+.rejectBtn {
+  background: #ef4444;
+  color: white;
+}
+
+
+/* =========================================================
+   WORKSPACE ROOT
+========================================================= */
+
 .rootSection {
+  padding: 16px;
+
   border-top: 1px solid var(--border);
   background: var(--bg);
-  padding: 16px;
 }
 
 .rootSection input {
   width: 100%;
   padding: 10px;
+
+  margin-bottom: 10px;
+
   border-radius: 10px;
   border: 1px solid var(--border);
-  margin-bottom: 10px;
+
   background: transparent;
   color: var(--text-h);
 }
 
 .rootBtn {
   padding: 8px 14px;
+
   border-radius: 999px;
   border: none;
+
   background: var(--accent);
   color: white;
-  cursor: pointer;
+
   font-weight: 500;
+  cursor: pointer;
 }
 
-/* ROOT STATUS */
+
+/* =========================================================
+   ROOT STATUS
+========================================================= */
+
 .rootStatus {
   margin-top: 10px;
-  font-size: 13px;
   padding: 8px 10px;
+
+  font-size: 13px;
   border-radius: 8px;
 }
 
@@ -206,217 +406,53 @@ textarea {
   color: #f87171;
 }
 
-/* GLOBAL TEXT WRAPPING FIX */
-.userBubble,
-.assistantMessage,
-.editContent,
-pre {
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
 
-/* CRITICAL FOR FLEX LAYOUT OVERFLOW BUGS */
-.chatStream,
-.assistantMessage,
-.userBubble {
-  min-width: 0;
-}
-
-/* MAKE MARKDOWN WRAP PROPERLY */
-.assistantMessage * {
-  white-space: normal;
-}
-
-/* PRE BLOCKS SHOULD NOT BREAK LAYOUT */
-.editContent {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* SAFETY FOR VERY LONG USER INPUT */
-.userBubble {
-  white-space: pre-wrap;
-}
-
-/* COPY UI */
-
-/* Make assistant message a vertical stack so button sits under text */
-.assistantMessage {
-  display: flex;
-  flex-direction: column;
-}
-
-/* base */
-.messageActions {
-  display: flex;
-  margin-top: 6px;
-}
-
-/* assistant = left */
-.messageActions.left {
-  justify-content: flex-start;
-}
-
-/* user = right */
-.messageActions.right {
-  justify-content: flex-end;
-}
-
-.messageActions.right .copyTooltip {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-
-/* wrapper handles hover state */
-.copyWrapper {
-  position: relative;
-  display: inline-flex;
-}
-
-/* button styling */
-.copyBtn {
-  background: transparent;
-  border: none;
-  padding: 6px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--text-h);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* darken on hover */
-.copyBtn:hover {
-  background: rgba(0, 0, 0, 0.15);
-}
-
-/* tooltip hidden by default */
-.copyTooltip {
-  position: absolute;
-  top: 110%;
-  left: 50%;
-  transform: translateX(-50%);
-  
-  max-width: 200px;
-
-  font-size: 11px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  background: var(--code-bg);
-  color: var(--text-h);
-  white-space: nowrap;
-
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease;
-  pointer-events: none;
-
-  z-index: 9999;
-}
-
-/* show tooltip ONLY on hover */
-.copyWrapper:hover .copyTooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* each message becomes a vertical stack */
-.messageRow {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-/* align user row to the right */
-.messageRow .userBubble {
-  align-self: flex-end;
-}
-
-/* align assistant row full width */
-.messageRow .assistantMessage {
-  align-self: stretch;
-}
-
-/* EDIT ACTIONS (CENTERED) */
-.editActions {
-  display: flex;
-  justify-content: center; /* ✅ center horizontally */
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-/* BASE BUTTON STYLE (shared) */
-.applyBtn,
-.rejectBtn {
-  padding: 8px 16px; /* ✅ identical sizing */
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  min-width: 140px; /* ✅ forces equal width */
-  text-align: center;
-}
-
-/* APPLY = GREEN */
-.applyBtn {
-  background: #22c55e; /* green */
-  color: white;
-}
-
-/* REJECT = RED */
-.rejectBtn {
-  background: #ef4444; /* solid red (cleaner than transparent) */
-  color: white;
-}
-
-.inputBar,
-.rootSection {
-  box-sizing: border-box;
-  width: 100%;
-}
-
-textarea,
-.rootSection input {
-  box-sizing: border-box;
-  max-width: 100%;
-}
+/* =========================================================
+   MODAL (HELP)
+========================================================= */
 
 .helpOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+
   display: flex;
   justify-content: center;
   align-items: center;
+
+  background: rgba(0,0,0,0.4);
+
   z-index: 2000;
 }
 
 .helpModal {
+  position: relative; /* anchor for close button */
+
   width: 90%;
   max-width: 500px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+
   padding: 24px;
+
+  border-radius: 12px;
+  border: 1px solid var(--border);
+
+  background: var(--bg);
 }
 
+/* modal header (title) */
 .helpHeader {
+  margin-bottom: 12px;
+
+  font-weight: 600;
+  font-size: 30px;
+
   display: flex;
   justify-content: space-between;
-  font-weight: 600;
-  margin-bottom: 12px;
-  font-size: 30px;
 }
 
-.closeBtn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-}
+
+/* =========================================================
+   MODAL CLOSE BUTTON
+========================================================= */
 
 .modalCloseBtn {
   position: absolute;
@@ -426,8 +462,8 @@ textarea,
   width: 32px;
   height: 32px;
 
-  border-radius: 50%;
   border: none;
+  border-radius: 50%;
 
   background: #ef4444;
   color: white;
@@ -448,6 +484,28 @@ textarea,
   background: #dc2626;
 }
 
-.modalWithClose {
-  position: relative;
+
+/* =========================================================
+   GLOBAL TEXT HANDLING / SAFETY
+========================================================= */
+
+/* prevent overflow */
+.chatStream,
+.assistantMessage,
+.userBubble {
+  min-width: 0;
+}
+
+/* wrap long text everywhere */
+.userBubble,
+.assistantMessage,
+.editContent,
+pre {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* ensure markdown behaves */
+.assistantMessage * {
+  white-space: normal;
 }

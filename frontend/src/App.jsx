@@ -3,10 +3,39 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import './App.css'
 
+const API_URL = "http://localhost:3001"
+
+/* =========================
+   Reusable UI Components
+========================= */
+
+function CopyButton({ text, index, copiedIndex, onCopy, label }) {
+  return (
+    <div className="copyWrapper">
+      <button className="copyBtn" onClick={() => onCopy(text, index)}>
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55" />
+          <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.3" />
+        </svg>
+      </button>
+
+      <div className="copyTooltip">
+        {copiedIndex === index ? "Copied" : label}
+      </div>
+    </div>
+  )
+}
+
+/* =========================
+   Main App
+========================= */
+
 function App() {
+  /* -------- State -------- */
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState([])
   const [edits, setEdits] = useState(null)
+
   const [rootPath, setRootPath] = useState("")
   const [rootStatus, setRootStatus] = useState(null)
 
@@ -18,82 +47,68 @@ function App() {
 
   const chatEndRef = useRef(null)
 
+  /* -------- Effects -------- */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isLoading])
 
-  async function setRoot(path) {
-    const res = await fetch("http://localhost:3001/set-root", {
+  /* =========================
+     API Helpers
+  ========================= */
+
+  async function post(endpoint, body) {
+    const res = await fetch(`${API_URL}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path })
+      body: JSON.stringify(body || {})
     })
 
     return res
   }
 
-  async function handleUpdateRoot() {
-    try {
-      const res = await setRoot(rootPath)
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || "Invalid path")
-      }
-
-      localStorage.setItem("rootPath", rootPath)
-      setRootStatus({ type: "success", message: "Root updated successfully" })
-    } catch (err) {
-      setRootStatus({ type: "error", message: err.message })
-    }
+  async function postJSON(endpoint, body) {
+    const res = await post(endpoint, body)
+    return res.json()
   }
+
+  /* =========================
+     Chat Logic
+  ========================= */
 
   async function sendChat() {
     if (!input.trim()) return
 
-    setEdits(null)
     setError(null)
+    setEdits(null)
 
     const userMessage = { role: "user", content: input }
     setMessages(prev => [...prev, userMessage])
-
     setIsLoading(true)
 
     try {
-      const res = await fetch("http://localhost:3001/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input })
-      })
+      const data = await postJSON("/chat", { message: input })
 
-      if (!res.ok) {
-        throw new Error("Request failed")
-      }
-
-      const data = await res.json()
-
-      const aiMessage = {
-        role: "assistant",
-        content: data.reply || data.error || "No response"
-      }
-
-      setMessages(prev => [...prev, aiMessage])
-    } catch (err) {
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: data.reply || data.error || "No response"
+        }
+      ])
+    } catch {
       setError("AI failed to respond")
     }
 
-    setIsLoading(false)
     setInput("")
+    setIsLoading(false)
   }
 
-  async function sendEdit() {
-    const res = await fetch("http://localhost:3001/edit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input })
-    })
+  /* =========================
+     Edit Logic
+  ========================= */
 
-    const data = await res.json()
+  async function sendEdit() {
+    const data = await postJSON("/edit", { message: input })
 
     if (data.edits) {
       setEdits(data.edits)
@@ -101,55 +116,122 @@ function App() {
   }
 
   async function applyEdits() {
-    await fetch("http://localhost:3001/apply-edits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ edits })
-    })
+    await post("/apply-edits", { edits })
 
     setEdits(null)
-    setMessages(prev => [...prev, {
-      role: "assistant",
-      content: "✅ Changes applied"
-    }])
+
+    setMessages(prev => [
+      ...prev,
+      { role: "assistant", content: "✅ Changes applied" }
+    ])
   }
+
+  async function rejectEdits() {
+    await post("/reject-edits")
+
+    setEdits(null)
+
+    setMessages(prev => [
+      ...prev,
+      { role: "assistant", content: "❌ Changes rejected" }
+    ])
+  }
+
+  /* =========================
+     Root Logic
+  ========================= */
+
+  async function handleUpdateRoot() {
+    try {
+      const res = await post("/set-root", { path: rootPath })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Invalid path")
+      }
+
+      localStorage.setItem("rootPath", rootPath)
+
+      setRootStatus({
+        type: "success",
+        message: "Root updated successfully"
+      })
+    } catch (err) {
+      setRootStatus({
+        type: "error",
+        message: err.message
+      })
+    }
+  }
+
+  /* =========================
+     UI Logic
+  ========================= */
 
   async function handleCopy(text, index) {
     try {
       await navigator.clipboard.writeText(text)
       setCopiedIndex(index)
-
       setTimeout(() => setCopiedIndex(null), 1200)
     } catch (e) {
       console.error("Copy failed", e)
     }
   }
 
-  async function rejectEdits() {
-    try {
-      await fetch("http://localhost:3001/reject-edits", {
-        method: "POST"
-      })
+  /* =========================
+     Render Helpers
+  ========================= */
 
-      setEdits(null)
+  function renderMessage(msg, i) {
+    const isUser = msg.role === "user"
 
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: "❌ Changes rejected"
-      }])
-    } catch (e) {
-      console.error("Reject failed", e)
+    if (isUser) {
+      return (
+        <>
+          <div className="userBubble">{msg.content}</div>
+
+          <div className="messageActions right">
+            <CopyButton
+              text={msg.content}
+              index={i}
+              copiedIndex={copiedIndex}
+              onCopy={handleCopy}
+              label="Copy message"
+            />
+          </div>
+        </>
+      )
     }
+
+    return (
+      <div className="assistantMessage">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {msg.content}
+        </ReactMarkdown>
+
+        <div className="messageActions left">
+          <CopyButton
+            text={msg.content}
+            index={i}
+            copiedIndex={copiedIndex}
+            onCopy={handleCopy}
+            label="Copy response"
+          />
+        </div>
+      </div>
+    )
   }
+
+  /* =========================
+     JSX
+  ========================= */
 
   return (
     <div className="appContainer">
 
       {/* HEADER */}
       <div className="appHeader">
-        <div className="headerLeft">
-          Cortex Code
-        </div>
+        <div className="headerLeft">Cortex Code</div>
 
         <div className="headerRight">
           <button className="helpBtn" onClick={() => setShowHelp(true)}>
@@ -163,119 +245,40 @@ function App() {
         <div className="helpOverlay" onClick={() => setShowHelp(false)}>
           <div className="helpModal modalWithClose" onClick={(e) => e.stopPropagation()}>
 
-            {/* Red close button */}
-            <button
-              className="modalCloseBtn"
-              onClick={() => setShowHelp(false)}
-            >
+            <button className="modalCloseBtn" onClick={() => setShowHelp(false)}>
               ×
             </button>
 
-            {/* Centered title */}
             <div className="helpHeader" style={{ justifyContent: "center" }}>
-              <span>Help</span>
+              Help
             </div>
 
-            {/* Left-aligned content */}
             <div style={{ textAlign: "left", lineHeight: 1.6 }}>
-              <p>
-                <strong>Description:</strong><br />
-                This is an AI agent that can read your project folder and help you answer questions and write code.
-                There are no monetary costs while using this AI assistant.
+              <p><strong>Description:</strong><br />
+                AI assistant for your project workspace.
               </p>
 
-              <p>
-                <strong>Chat Button:</strong><br />
-                Ask the AI anything. The AI will not edit your codebase.<br />
-                Example: <em>"What is your favorite file in the codebase?"</em>
+              <p><strong>Chat:</strong><br />
+                Ask questions about your codebase.
               </p>
 
-              <p>
-                <strong>Edit Button:</strong><br />
-                Command the AI to make changes to your codebase.
-                This lets the AI suggest changes to your files first, before applying them.
+              <p><strong>Edit:</strong><br />
+                Request changes before applying them.
               </p>
 
-              <p>
-                <strong>Workspace Root:</strong><br />
-                This is the folder where your project lives on your computer.<br />
-                Example path:<br />
-                <code>C:\Users\YourName\foldername\foldername2</code><br />
-              </p>
-
-              <p>
-                <strong>Copy Icon:</strong><br />
-                Click the copy icon to copy any message to your clipboard.
-              </p>
-
-              <p>
-                <strong>Important:</strong><br />
-                The AI cannot access your whole computer. It only works with the files inside the workspace you provide.
+              <p><strong>Root:</strong><br />
+                Set your project folder path.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* CHAT STREAM */}
+      {/* CHAT */}
       <div className="chatStream">
-        {messages.map((msg, i) => (
-          <div key={i} className="messageRow">
+        {messages.map(renderMessage)}
 
-            {msg.role === "user" ? (
-              <>
-                <div className="userBubble">
-                  {msg.content}
-                </div>
-
-                <div className="messageActions right">
-                  <div className="copyWrapper">
-                    <button
-                      className="copyBtn"
-                      onClick={() => handleCopy(msg.content, i)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24">
-                        <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55" />
-                        <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.3" />
-                      </svg>
-                    </button>
-
-                    <div className="copyTooltip">
-                      {copiedIndex === i ? "Copied" : "Copy message"}
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="assistantMessage">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {msg.content}
-                </ReactMarkdown>
-
-                <div className="messageActions left">
-                  <div className="copyWrapper">
-                    <button
-                      className="copyBtn"
-                      onClick={() => handleCopy(msg.content, i)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24">
-                        <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55" />
-                        <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.3" />
-                      </svg>                    </button>
-
-                    <div className="copyTooltip">
-                      {copiedIndex === i ? "Copied" : "Copy response"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-
-        {isLoading && (
-          <div className="assistantMessage">Thinking...</div>
-        )}
+        {isLoading && <div className="assistantMessage">Thinking...</div>}
 
         {error && (
           <div className="assistantMessage" style={{ color: "red" }}>
@@ -303,17 +306,16 @@ function App() {
 
           <div className="editActions">
             <button className="applyBtn" onClick={applyEdits}>
-              Apply Changes
+              Apply
             </button>
-
             <button className="rejectBtn" onClick={rejectEdits}>
-              Reject Changes
+              Reject
             </button>
           </div>
         </div>
       )}
 
-      {/* INPUT BAR */}
+      {/* INPUT */}
       <div className="inputBar">
         <textarea
           rows={3}
@@ -328,7 +330,7 @@ function App() {
         </div>
       </div>
 
-      {/* WORKSPACE ROOT */}
+      {/* ROOT */}
       <div className="rootSection">
         <div className="panelHeader">Workspace Root</div>
 
@@ -348,7 +350,6 @@ function App() {
           </div>
         )}
       </div>
-
     </div>
   )
 }
