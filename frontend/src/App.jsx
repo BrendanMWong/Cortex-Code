@@ -148,8 +148,8 @@ function App() {
                       onClick={() => handleCopy(msg.content, i)}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24">
-                        <rect x="9" y="9" width="10" height="10" rx="2" />
-                        <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.6" />
+                        <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55"/>
+                        <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.3" />
                       </svg>
                     </button>
 
@@ -173,8 +173,8 @@ function App() {
                       onClick={() => handleCopy(msg.content, i)}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24">
-                        <rect x="9" y="9" width="10" height="10" rx="2" />
-                        <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.6" />
+                        <rect x="9" y="9" width="10" height="10" rx="2" opacity="0.55"/>
+                        <rect x="5" y="5" width="10" height="10" rx="2" opacity="0.3" />
                       </svg>
                     </button>
 
