@@ -26,10 +26,12 @@
 
 /* ASSISTANT MESSAGE */
 .assistantMessage {
-  align-self: flex-start;
-  max-width: 70%;
+  align-self: stretch;
+  width: 100%;
   padding: 10px 14px;
   line-height: 1.6;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border);
 }
 
 /* INPUT BAR */
@@ -160,4 +162,36 @@ textarea {
 .rootStatus.error {
   background: rgba(255, 0, 0, 0.12);
   color: #f87171;
+}
+
+/* GLOBAL TEXT WRAPPING FIX */
+.userBubble,
+.assistantMessage,
+.editContent,
+pre {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* CRITICAL FOR FLEX LAYOUT OVERFLOW BUGS */
+.chatStream,
+.assistantMessage,
+.userBubble {
+  min-width: 0;
+}
+
+/* MAKE MARKDOWN WRAP PROPERLY */
+.assistantMessage * {
+  white-space: normal;
+}
+
+/* PRE BLOCKS SHOULD NOT BREAK LAYOUT */
+.editContent {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* SAFETY FOR VERY LONG USER INPUT */
+.userBubble {
+  white-space: pre-wrap;
 }
