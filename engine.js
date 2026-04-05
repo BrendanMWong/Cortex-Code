@@ -116,7 +116,7 @@ function readFolder(dir) {
             try {
                 const content = fs.readFileSync(fullPath, "utf-8");
                 results.push({ path: fullPath, content });
-            } catch {}
+            } catch { }
         }
     }
 
@@ -219,14 +219,25 @@ function applyEdits(edits) {
             if (edit.action === "delete") {
                 fs.unlinkSync(fullPath);
             } else if (edit.action === "append") {
-                fs.appendFileSync(fullPath, edit.content || "", "utf-8");
+                const existing = fs.existsSync(fullPath)
+                    ? fs.readFileSync(fullPath, "utf-8")
+                    : "";
+
+                let contentToAppend = edit.content || "";
+
+                // Ensure newline separation
+                if (existing.length > 0 && !existing.endsWith("\n")) {
+                    contentToAppend = "\n" + contentToAppend;
+                }
+
+                fs.appendFileSync(fullPath, contentToAppend, "utf-8");
             } else if (edit.action === "create") {
                 fs.mkdirSync(path.dirname(fullPath), { recursive: true });
                 fs.writeFileSync(fullPath, edit.content || "", "utf-8");
             } else if (edit.action === "replace") {
                 fs.writeFileSync(fullPath, edit.content || "", "utf-8");
             }
-        } catch {}
+        } catch { }
     }
 
     pendingEdits = [];
