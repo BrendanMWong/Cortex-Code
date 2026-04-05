@@ -108,10 +108,24 @@ function App() {
   ========================= */
 
   async function sendEdit() {
-    const data = await postJSON("/edit", { message: input })
+    setError(null)
 
-    if (data.edits) {
-      setEdits(data.edits)
+    try {
+      const data = await postJSON("/edit", { message: input })
+
+      if (data.error) {
+        setError(data.error)
+        return
+      }
+
+      if (data.edits) {
+        setEdits(data.edits)
+      } else {
+        setError("No edits returned")
+      }
+
+    } catch {
+      setError("Edit request failed")
     }
   }
 
