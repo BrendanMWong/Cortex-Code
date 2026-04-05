@@ -6,18 +6,18 @@ function App() {
   const [output, setOutput] = useState("")
   const [status, setStatus] = useState("Initializing...")
 
+  // NEW: root path state
+  const [rootPath, setRootPath] = useState("")
+
   useEffect(() => {
     async function init() {
       try {
-        const res = await fetch("http://localhost:3001/set-root", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            path: "C:\\insert\\path\\here"
-          })
-        })
-
-        if (!res.ok) throw new Error()
+        // Try restoring previous root (optional but useful)
+        const savedPath = localStorage.getItem("rootPath")
+        if (savedPath) {
+          setRootPath(savedPath)
+          await setRoot(savedPath)
+        }
 
         setStatus("Connected")
       } catch {
@@ -27,6 +27,34 @@ function App() {
 
     init()
   }, [])
+
+  async function setRoot(path) {
+    const res = await fetch("http://localhost:3001/set-root", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path })
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || "Failed to set root")
+    }
+
+    return true
+  }
+
+  // NEW: button handler
+  async function handleUpdateRoot() {
+    setStatus("Updating root...")
+
+    try {
+      await setRoot(rootPath)
+      localStorage.setItem("rootPath", rootPath)
+      setStatus("Root updated")
+    } catch (e) {
+      setStatus("Invalid root path")
+    }
+  }
 
   async function sendChat() {
     setOutput("Thinking...")
@@ -80,6 +108,23 @@ function App() {
         <button onClick={sendChat}>Chat</button>
         <button onClick={sendEdit} style={{ marginLeft: 10 }}>
           Edit
+        </button>
+      </div>
+
+      {/* NEW: Root Path Section */}
+      <div style={{ marginTop: 30 }}>
+        <h3>Workspace Root</h3>
+
+        <input
+          type="text"
+          style={{ width: "100%" }}
+          value={rootPath}
+          onChange={(e) => setRootPath(e.target.value)}
+          placeholder="Enter file path..."
+        />
+
+        <button onClick={handleUpdateRoot} style={{ marginTop: 10 }}>
+          Update Root
         </button>
       </div>
 
