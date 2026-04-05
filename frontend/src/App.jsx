@@ -13,8 +13,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // NEW: track copied message
   const [copiedIndex, setCopiedIndex] = useState(null)
+  const [showHelp, setShowHelp] = useState(false)
 
   const chatEndRef = useRef(null)
 
@@ -114,7 +114,6 @@ function App() {
     }])
   }
 
-  // NEW: copy handler
   async function handleCopy(text, index) {
     try {
       await navigator.clipboard.writeText(text)
@@ -153,11 +152,30 @@ function App() {
         </div>
 
         <div className="headerRight">
-          <button className="helpBtn" onClick={() => alert("Help goes here")}>
+          <button className="helpBtn" onClick={() => setShowHelp(true)}>
             Help
           </button>
         </div>
       </div>
+
+      {/* HELP MODAL */}
+      {showHelp && (
+        <div className="helpOverlay" onClick={() => setShowHelp(false)}>
+          <div className="helpModal" onClick={(e) => e.stopPropagation()}>
+            <div className="helpHeader">
+              <span>Help</span>
+              <button className="closeBtn" onClick={() => setShowHelp(false)}>×</button>
+            </div>
+
+            <div>
+              <p><strong>Chat:</strong> Ask questions or request code changes.</p>
+              <p><strong>Edit:</strong> Propose structured file edits.</p>
+              <p><strong>Copy:</strong> Click the copy icon on any message.</p>
+              <p><strong>Workspace Root:</strong> Set the base folder for edits.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CHAT STREAM */}
       <div className="chatStream">
