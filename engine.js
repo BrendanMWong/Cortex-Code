@@ -162,33 +162,10 @@ function scoreFiles(userInput) {
 }
 
 /* =========================
-   INTENT CLASSIFICATION
-========================= */
-
-function classifyIntent(text) {
-    const lower = text.toLowerCase()
-
-    const signals = ["file", "files", "folder", "directory", "structure", "tree", "list", "show"]
-
-    let score = 0
-    for (const s of signals) {
-        if (lower.includes(s)) score++
-    }
-
-    if (score >= 2) return "file_list"
-
-    if (/\b[\w\-.\/]+\.\w+\b/.test(text)) {
-        return "file_search"
-    }
-
-    return null
-}
-
-/* =========================
    AI
 ========================= */
 
-async function callAI(systemPrompt, userPrompt) {
+async function callAI(systemPrompt, userPrompt, temperature = 0) {
     try {
         const res = await fetchFn("http://localhost:11434/api/chat", {
             method: "POST",
@@ -200,7 +177,7 @@ async function callAI(systemPrompt, userPrompt) {
                     { role: "user", content: userPrompt }
                 ],
                 stream: false,
-                options: { temperature: 0 }
+                options: { temperature }
             })
         })
 
@@ -353,48 +330,20 @@ Return ONLY JSON:
 async function runChat(userText) {
     if (!ACTIVE_ROOT) throw new Error("Root not set")
 
-    const lower = userText.toLowerCase()
-    const intent = classifyIntent(userText)
-    const explicit = extractExplicitFiles(userText)
-
-    /* --- File listing --- */
-    if (
-        intent === "file_list" ||
-        (lower.includes("everything") &&
-            (lower.includes("codebase") || lower.includes("project")))
-    ) {
-        return { reply: FILE_INDEX.join("\n") }
-    }
-
-    /* --- Explicit file read --- */
-    if (explicit.length > 0) {
-        const matches = readFolder(ACTIVE_ROOT).filter(f =>
-            explicit.some(p =>
-                f.path.toLowerCase().endsWith(p.toLowerCase())
-            )
-        )
-
-        if (matches.length) {
-            return {
-                reply: matches
-                    .map(f => `=== ${f.path} ===\n${f.content}`)
-                    .join("\n\n")
-            }
-        }
-    }
-
-    /* --- AI fallback --- */
     const files = scoreFiles(userText)
 
     if (!files.length) {
-        return { reply: "No relevant files found." }
+        return { reply: "I couldn't find anything relevant in your project." }
     }
 
     const context = buildContext(files)
 
+    const systemPrompt = "You are a helpful coding assistant."
+
     const reply = await callAI(
-        "You are a helpful coding assistant.",
-        `CONTENT:\n${context}\n\nUser: ${userText}`
+        systemPrompt,
+        `PROJECT CONTEXT:\n${context}\n\nUser: ${userText}`,
+        0.7
     )
 
     return { reply: reply || "AI failed to respond" }
@@ -422,6 +371,9 @@ module.exports = {
     runChat,
     runEditFlow,
     applyEdits,
-    getPendingEdits,
-    clearPendingEdits
+    getPendingEdits: () => pendingEdits,
+    clearPendingEdits: () => {
+        pendingEdits = []
+        lastSelectedFiles = []
+    }
 }
