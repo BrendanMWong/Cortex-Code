@@ -54,3 +54,5 @@ npm run build
 npm install electron electron-builder concurrently --save-dev
 
 npm run electron
+
+npm run dist
