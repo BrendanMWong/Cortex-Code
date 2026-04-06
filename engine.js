@@ -192,9 +192,19 @@ async function callAI(systemPrompt, userPrompt, temperature = 0) {
    EDIT PARSING / VALIDATION
 ========================= */
 
+// ✅ IMPROVED JSON EXTRACTION
 function extractJSON(text) {
-    const match = text.match(/\{[\s\S]*\}/)
-    return match ? match[0] : null
+    if (!text) return null
+
+    // try fenced block first
+    const fence = text.match(/```json\s*([\s\S]*?)```/)
+    if (fence) return fence[1]
+
+    // fallback: grab largest {...}
+    const matches = text.match(/\{[\s\S]*\}/g)
+    if (!matches) return null
+
+    return matches[matches.length - 1]
 }
 
 function validateEdits(data) {
@@ -203,8 +213,8 @@ function validateEdits(data) {
     if (!Array.isArray(data.edits)) return false
 
     return data.edits.every(e =>
-        e.path &&
-        e.action &&
+        typeof e.path === "string" &&
+        typeof e.action === "string" &&
         ["replace", "create", "append", "delete"].includes(e.action)
     )
 }
@@ -252,6 +262,7 @@ function applyEdits(edits) {
                 fs.writeFileSync(fullPath, edit.content || "", "utf-8")
 
             } else if (edit.action === "replace") {
+                // ✅ ALWAYS allow full overwrite
                 fs.writeFileSync(fullPath, edit.content || "", "utf-8")
             }
 
@@ -290,14 +301,16 @@ async function runEditFlow(userText) {
     const systemPrompt = `
 You are a code editor.
 
-Return ONLY JSON:
+Return JSON if possible, but if you cannot, just return the FULL corrected file.
+
+Preferred JSON format:
 {
   "mode": "edit",
   "edits": [
     {
       "path": "file path",
-      "action": "replace | create | append | delete",
-      "content": "text"
+      "action": "replace",
+      "content": "full file content"
     }
   ]
 }
@@ -307,20 +320,33 @@ Return ONLY JSON:
 
     if (!reply) return { error: "AI failed" }
 
+    // ✅ TRY JSON FIRST
     try {
-        const parsed = JSON.parse(extractJSON(reply))
+        const jsonText = extractJSON(reply)
 
-        if (!validateEdits(parsed)) {
-            return { error: "Invalid edit format" }
+        if (jsonText) {
+            const parsed = JSON.parse(jsonText)
+
+            if (validateEdits(parsed)) {
+                pendingEdits = parsed.edits
+                return { ok: true, edits: pendingEdits }
+            }
         }
+    } catch { }
 
-        pendingEdits = parsed.edits
+    // 🚨 FALLBACK: FORCE REPLACE
+    // If JSON fails, assume raw file output
+    if (files.length === 1) {
+        pendingEdits = [{
+            path: files[0].path,
+            action: "replace",
+            content: reply
+        }]
 
-        return { ok: true, edits: pendingEdits }
-
-    } catch {
-        return { error: "Invalid JSON from AI" }
+        return { ok: true, edits: pendingEdits, fallback: true }
     }
+
+    return { error: "AI output unusable" }
 }
 
 /* =========================
