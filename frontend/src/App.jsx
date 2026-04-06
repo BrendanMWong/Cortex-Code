@@ -48,9 +48,31 @@ function App() {
   const chatEndRef = useRef(null)
 
   /* -------- Effects -------- */
+
+  // auto scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isLoading])
+
+  // load saved root from localStorage
+  useEffect(() => {
+    const savedRoot = localStorage.getItem("rootPath")
+    if (savedRoot) {
+      setRootPath(savedRoot)
+    }
+  }, [])
+
+  // optionally auto-apply saved root to backend
+  useEffect(() => {
+    const savedRoot = localStorage.getItem("rootPath")
+    if (savedRoot) {
+      fetch(`${API_URL}/set-root`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: savedRoot })
+      }).catch(() => {})
+    }
+  }, [])
 
   /* =========================
      API Helpers
@@ -164,6 +186,7 @@ function App() {
         throw new Error(err.error || "Invalid path")
       }
 
+      // save to localStorage
       localStorage.setItem("rootPath", rootPath)
 
       setRootStatus({
