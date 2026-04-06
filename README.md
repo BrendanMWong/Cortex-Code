@@ -48,3 +48,7 @@ Conversation history is maintained during the session
 Press: Ctrl + C
 
 npm install react-markdown remark-gfm
+
+npm run build
+
+npm install electron electron-builder concurrently --save-dev

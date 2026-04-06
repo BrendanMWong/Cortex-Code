@@ -1,6 +1,7 @@
 {
   "name": "cortex-code-testing",
   "version": "1.0.0",
+  "main": "main.js",
   "description": "llama3 model used",
   "keywords": [],
   "homepage": "https://github.com/BrendanMWong/Cortex-Code-Testing#readme",
@@ -14,16 +15,35 @@
   "license": "ISC",
   "author": "",
   "type": "commonjs",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm run dev --prefix frontend\" \"node server.js\"",
+    "build": "npm run build --prefix frontend",
+    "electron": "electron .",
+    "dist": "electron-builder",
     "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "node-fetch": "^3.3.2",
-    "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^41.1.1",
+    "electron-builder": "^26.8.1"
+  }, 
+  "build": {
+    "appId": "com.cortex.app",
+    "productName": "Cortex",
+    "files": [
+      "main.js",
+      "server.js",
+      "engine.js",
+      "frontend/dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    }
   }
 }
