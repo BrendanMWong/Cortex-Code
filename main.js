@@ -2,6 +2,9 @@ const { app, BrowserWindow, Menu } = require("electron")
 const path = require("path")
 const { spawn } = require("child_process")
 
+app.commandLine.appendSwitch("disable-features", "GpuDiskCache")
+app.setPath("userData", path.join(__dirname, "userdata"))
+
 let mainWindow
 let serverProcess
 let ollamaProcess
@@ -18,6 +21,7 @@ function createWindow() {
     }
   })
 
+  Menu.setApplicationMenu(null)
   mainWindow.removeMenu()
   mainWindow.setMenuBarVisibility(false)
 
@@ -28,7 +32,7 @@ function createWindow() {
 
 function startBackend() {
   // Start Express server with hidden console windows on Windows
-  serverProcess = spawn(process.execPath, [path.join(__dirname, "server.js")], {
+  serverProcess = spawn("node", ["server.js"], {
     cwd: __dirname,
     shell: false,
     stdio: "ignore",
@@ -43,7 +47,7 @@ function startBackend() {
 function startOllama() {
   // Start Ollama server with hidden console windows on Windows
   ollamaProcess = spawn("ollama", ["serve"], {
-    shell: true,
+    shell: false,
     stdio: "ignore",
     windowsHide: true
   })
