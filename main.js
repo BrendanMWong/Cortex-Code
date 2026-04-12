@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron")
+const { app, BrowserWindow, Menu } = require("electron")
 const path = require("path")
 const { spawn } = require("child_process")
 
@@ -10,26 +10,29 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      devTools: false
     }
   })
+
+  mainWindow.removeMenu()
+  mainWindow.setMenuBarVisibility(false)
 
   mainWindow.loadFile(
     path.join(__dirname, "frontend/dist/index.html")
   )
-
-  // Debug tools (optional but useful)
-  mainWindow.webContents.openDevTools()
 }
 
 function startBackend() {
-  // Start Express server
-  serverProcess = spawn("node", ["server.js"], {
+  // Start Express server with hidden console windows on Windows
+  serverProcess = spawn(process.execPath, [path.join(__dirname, "server.js")], {
     cwd: __dirname,
-    shell: true,
-    stdio: "inherit"
+    shell: false,
+    stdio: "ignore",
+    windowsHide: true
   })
 
   serverProcess.on("error", (err) => {
@@ -38,10 +41,11 @@ function startBackend() {
 }
 
 function startOllama() {
-  // Start Ollama server
+  // Start Ollama server with hidden console windows on Windows
   ollamaProcess = spawn("ollama", ["serve"], {
     shell: true,
-    stdio: "inherit"
+    stdio: "ignore",
+    windowsHide: true
   })
 
   ollamaProcess.on("error", (err) => {
