@@ -320,6 +320,7 @@ textarea {
   max-height: 280px;
   overflow: auto;
   white-space: pre-wrap;
+  text-align: left;
 }
 
 
