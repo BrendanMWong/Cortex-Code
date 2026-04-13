@@ -1,10 +1,10 @@
-# Cortex Code Testing
+# Cortex Code
 
-Cortex Code Testing is an Electron-based local **AI agent** application that runs a React frontend with an Express backend and uses Ollama's `llama3` model for conversational AI. The AI agent can discuss a selected codebase, and make changes to its contents.
+Cortex Code is an Electron-based local **AI agent** application that runs a React frontend with an Express backend and uses Ollama's `llama3` model for conversational AI. The AI agent can discuss a selected codebase, and make changes to its contents.
 
 ## How to run the installed `.exe` from GitHub release
 
-If you have installed `Cortex Code Setup 1.0.0.exe` from the GitHub release, use these steps:
+If you have installed `Cortex Code v1.0.0 Initial Release.exe` from the GitHub release, use these steps:
 
 1. Install the app by running the downloaded installer.
 2. Make sure Ollama is installed and the `llama3` model is available:
