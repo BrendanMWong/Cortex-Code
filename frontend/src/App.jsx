@@ -343,7 +343,7 @@ function App() {
               <div className="editPath">{e.path}</div>
               <div className="editAction">{e.action}</div>
               <pre className="editContent">
-                {(e.content || "").slice(0, 200)}
+                {e.content || ""}
               </pre>
             </div>
           ))}

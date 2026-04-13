@@ -303,7 +303,8 @@ textarea {
 
   background: var(--code-bg);
 
-  overflow-x: auto;
+  max-height: 280px;
+  overflow: auto;
   white-space: pre-wrap;
 }
 
