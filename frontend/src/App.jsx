@@ -382,7 +382,8 @@ function App() {
               </p>
 
               <p><strong>Root:</strong><br />
-                Set your project folder path.
+                Set your project folder path.<br />
+                Example: C:\Users\yourname\Documents\Code\Codebase
               </p>
             </div>
           </div>
