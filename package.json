@@ -34,7 +34,8 @@
   }, 
   "build": {
     "appId": "com.cortex.app",
-    "productName": "Cortex",
+    "productName": "Cortex Code",
+    "icon": "frontend/public/favicon.ico",
     "files": [
       "main.js",
       "server.js",
