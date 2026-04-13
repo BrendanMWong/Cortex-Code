@@ -32,8 +32,8 @@ If you have installed `Cortex Code Setup 1.0.0.exe` from the GitHub release, use
 Clone the repo and install dependencies:
 
 ```bash
-git clone https://github.com/BrendanMWong/Cortex-Code-Testing.git
-cd Cortex-Code-Testing
+git clone https://github.com/BrendanMWong/Cortex-Code.git
+cd Cortex-Code
 npm install
 cd frontend
 npm install
