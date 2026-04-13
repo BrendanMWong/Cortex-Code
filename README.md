@@ -1,58 +1,94 @@
-# Cortex-Code-Testing
+# Cortex Code Testing
 
-## Prerequisites
+Cortex Code Testing is an Electron-based local **AI agent** application that runs a React frontend with an Express backend and uses Ollama's `llama3` model for conversational AI. The AI agent can discuss a selected codebase, and make changes to its contents.
 
-Install the following:
+## How to run the installed `.exe` from GitHub release
 
-- Node.js  
-- Ollama (local LLM runtime)
+If you have installed `Cortex Code Setup 1.0.0.exe` from the GitHub release, use these steps:
+
+1. Install the app by running the downloaded installer.
+2. Make sure Ollama is installed and the `llama3` model is available:
+   - Download Ollama here: https://ollama.com/download
+   - Run this in your terminal: `ollama pull llama3`
+3. Launch the installed Cortex Code app:
+   - Use the Windows Start menu entry, desktop shortcut, or the installed app launcher.
+4. Use the app normally once it opens.
+
+### Important note
+- The installed `.exe` is based on the Electron build, so the app should launch directly from Windows.
+- The app automatically starts `ollama serve` in the background when it launches.
+- If Ollama is not installed or not on your PATH, the app will fail to start it.
+
+### Stopping
+- Close the Cortex Code app normally.
+- The app shuts down the Ollama process automatically when it quits.
 
 ---
 
-## Setup (run once)
+## Repository / source instructions without the installed `.exe` from GitHub release
 
-Install the required model:
+### One-time setup
+
+Clone the repo and install dependencies:
+
+```bash
+git clone https://github.com/BrendanMWong/Cortex-Code-Testing.git
+cd Cortex-Code-Testing
+npm install
+cd frontend
+npm install
+cd ..
+```
+
+Install Ollama and pull the model:
 
 ```bash
 ollama pull llama3
 ```
 
-## Running the system (repeat every time program should start)
+### Run the project and terminate it
 
-### 1. Start Ollama (required)
+Open three terminals:
 
-Run the Ollama server in a terminal:
+- Terminal 1 for `ollama serve`
+- Terminal 2 for `node server.js`
+- Terminal 3 for `npm run dev`
+
+Start Ollama:
 
 ```bash
 ollama serve
 ```
-This starts the local API at:
 
-http://localhost:11434
-
-### 2. Run the chatbot
-
-In a separate terminal, start the application:
+Start the node server:
 
 ```bash
-node chat.js
+node server.js
 ```
-### 3. Usage
-Type a message and press Enter to chat
 
-The model will respond using the local llama3 model
+Start the app locally:
 
-Conversation history is maintained during the session
+```bash
+npm run dev
+```
 
-### 4. Stopping the program
-Press: Ctrl + C
+Click the link `npm run dev` returns. It opens the project in a browser window.
 
-npm install react-markdown remark-gfm
+When done:
 
-npm run build
+- In the terminal running `npm run dev`: press `Ctrl + C`
+- In the terminal running `node server.js`: press `Ctrl + C`
+- In the terminal running `ollama serve`: press `Ctrl + C`
 
-npm install electron electron-builder concurrently --save-dev
+### Optional built version instead of `npm run dev`
 
-npm run electron
+```bash
+npm run build --prefix frontend
+npm run preview --prefix frontend
+```
 
-npm run dist
+When finished:
+
+- `Ctrl + C` to stop `node server.js` and `npm run preview`
+- `Ctrl + C` to stop `ollama serve`
+
