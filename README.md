@@ -92,3 +92,30 @@ When finished:
 - `Ctrl + C` to stop `node server.js` and `npm run preview`
 - `Ctrl + C` to stop `ollama serve`
 
+### Optional electron application version instead of `npm run dev`
+
+```bash
+npm run build 
+npm run electron
+```
+
+When finished:
+
+- Close the application window
+
+### Optional .exe application version instead of `npm run dev`
+
+```bash
+npm run build 
+npm run dist
+```
+
+1. Locate the .exe installer file: Cortex-Code/dist/Cortex Code Setup 1.0.0.exe
+2. Run the installer
+3. Launch the installed Cortex Code app:
+   - Use the Windows Start menu entry, desktop shortcut, or the installed app launcher.
+
+
+When finished:
+
+- Close the application window

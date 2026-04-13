@@ -202,7 +202,6 @@ async function callAI(systemPrompt, userPrompt, temperature = 0) {
    EDIT PARSING / VALIDATION
 ========================= */
 
-// ✅ IMPROVED JSON EXTRACTION
 function normalizeJsonCandidate(jsonText) {
     if (!jsonText) return jsonText
 
@@ -393,8 +392,6 @@ Preferred JSON format:
         }
     }
 
-    // 🚨 FALLBACK: FORCE REPLACE
-    // Only use fallback when no explanation is present
     if (files.length === 1) {
         pendingEdits = [{
             path: files[0].path,

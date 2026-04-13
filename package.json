@@ -1,16 +1,16 @@
 {
-  "name": "cortex-code-testing",
+  "name": "cortex-code",
   "version": "1.0.0",
   "main": "main.js",
   "description": "llama3 model used",
   "keywords": [],
-  "homepage": "https://github.com/BrendanMWong/Cortex-Code-Testing#readme",
+  "homepage": "https://github.com/BrendanMWong/Cortex-Code#readme",
   "bugs": {
-    "url": "https://github.com/BrendanMWong/Cortex-Code-Testing/issues"
+    "url": "https://github.com/BrendanMWong/Cortex-Code/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BrendanMWong/Cortex-Code-Testing.git"
+    "url": "git+https://github.com/BrendanMWong/Cortex-Code.git"
   },
   "license": "ISC",
   "author": "",
