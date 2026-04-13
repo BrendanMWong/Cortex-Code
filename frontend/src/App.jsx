@@ -49,10 +49,10 @@ function App() {
 
   /* -------- Effects -------- */
 
-  // auto scroll
+  // auto scroll message view when chat or edit results change
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, isLoading])
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+  }, [messages, isLoading, edits])
 
   // load saved root from localStorage
   useEffect(() => {
