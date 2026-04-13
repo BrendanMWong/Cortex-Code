@@ -4,7 +4,7 @@ Cortex Code is an Electron-based local **AI agent** application that runs a Reac
 
 ## How to run the installed `.exe` from GitHub release
 
-If you have installed `Cortex Code v1.0.0 Initial Release.exe` from the GitHub release, use these steps:
+If you have installed `Cortex.Code.v1.0.0.Initial.Release.exe` from the GitHub release, use these steps:
 
 1. Install the app by running the downloaded installer.
 2. Make sure Ollama is installed and the `llama3` model is available:
