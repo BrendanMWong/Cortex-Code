@@ -36,7 +36,7 @@
     "appId": "com.cortex.app",
     "productName": "Cortex Code",
     "icon": "frontend/public/favicon.ico",
-    "asar": false,
+    "asar": true,
     "files": [
       "main.js",
       "server.js",
