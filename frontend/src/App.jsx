@@ -140,6 +140,13 @@ function App() {
         return
       }
 
+      if (data.explanation) {
+        setMessages(prev => [
+          ...prev,
+          { role: "assistant", content: data.explanation }
+        ])
+      }
+
       if (data.edits) {
         setEdits(data.edits)
       } else {

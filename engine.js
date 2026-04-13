@@ -131,7 +131,17 @@ function buildContext(files) {
 ========================= */
 
 function extractExplicitFiles(text) {
-    return text.match(/\b[\w\-.\/]+\.\w+\b/g) || []
+    return text.match(/\b[\w\-.\\\/]+\.\w+\b/g) || []
+}
+
+function buildExplicitFilePlaceholders(paths) {
+    return paths.map((p) => {
+        const cleaned = p.replace(/^\/+/, "")
+        return {
+            path: path.resolve(ACTIVE_ROOT, cleaned),
+            content: ""
+        }
+    })
 }
 
 function scoreFiles(userInput) {
@@ -193,18 +203,46 @@ async function callAI(systemPrompt, userPrompt, temperature = 0) {
 ========================= */
 
 // ✅ IMPROVED JSON EXTRACTION
-function extractJSON(text) {
-    if (!text) return null
+function normalizeJsonCandidate(jsonText) {
+    if (!jsonText) return jsonText
 
-    // try fenced block first
-    const fence = text.match(/```json\s*([\s\S]*?)```/)
-    if (fence) return fence[1]
+    return jsonText.replace(/"""\s*([\s\S]*?)\s*"""/g, (_, inner) => {
+        return JSON.stringify(inner.replace(/\r/g, ""))
+    })
+}
 
-    // fallback: grab largest {...}
-    const matches = text.match(/\{[\s\S]*\}/g)
-    if (!matches) return null
+function extractJsonAndExplanation(text) {
+    if (!text) return { explanation: null, jsonText: null }
 
-    return matches[matches.length - 1]
+    const fenceMatch = text.match(/```json\s*([\s\S]*?)```/)
+    let jsonText = null
+    let explanation = null
+
+    if (fenceMatch) {
+        jsonText = fenceMatch[1]
+        explanation = text.slice(0, fenceMatch.index).trim()
+    } else {
+        const matches = text.match(/\{[\s\S]*\}/g)
+        if (!matches) return { explanation: null, jsonText: null }
+
+        const lastMatch = matches[matches.length - 1]
+        const index = text.lastIndexOf(lastMatch)
+        explanation = text.slice(0, index).trim()
+        jsonText = lastMatch
+    }
+
+    if (explanation) {
+        explanation = explanation
+            .replace(/(?:Here is the JSON representation of the edit:|Here is the plan:)\s*$/i, "")
+            .trim()
+
+        if (!explanation) explanation = null
+    }
+
+    return {
+        explanation,
+        jsonText: normalizeJsonCandidate(jsonText)
+    }
 }
 
 function validateEdits(data) {
@@ -282,13 +320,20 @@ async function runEditFlow(userText) {
 
     const explicit = extractExplicitFiles(userText)
 
-    let files = explicit.length > 0
-        ? readFolder(ACTIVE_ROOT).filter(f =>
+    let files
+    if (explicit.length > 0) {
+        const matched = readFolder(ACTIVE_ROOT).filter(f =>
             explicit.some(p =>
                 f.path.toLowerCase().endsWith(p.toLowerCase())
             )
         )
-        : scoreFiles(userText)
+
+        files = matched.length > 0
+            ? matched
+            : buildExplicitFilePlaceholders(explicit)
+    } else {
+        files = scoreFiles(userText)
+    }
 
     if (!files.length) {
         return { error: "No relevant files found." }
@@ -301,8 +346,12 @@ async function runEditFlow(userText) {
     const systemPrompt = `
 You are a code editor.
 
-Return JSON if possible, but if you cannot, just return the FULL corrected file.
-
+First describe in plain language what changes you will make.
+Then on a new line, provide only valid JSON describing the edit plan.
+The JSON must be the last thing in your response.
+Do not wrap the JSON in markdown or code fences.
+If the user wants a file cleared, prefer action "delete" or "replace" with empty content.
+Do not include file markers like === FILE START === in the JSON content.
 Preferred JSON format:
 {
   "mode": "edit",
@@ -320,22 +369,32 @@ Preferred JSON format:
 
     if (!reply) return { error: "AI failed" }
 
-    // ✅ TRY JSON FIRST
-    try {
-        const jsonText = extractJSON(reply)
+    const { explanation, jsonText } = extractJsonAndExplanation(reply)
 
-        if (jsonText) {
+    if (jsonText) {
+        try {
             const parsed = JSON.parse(jsonText)
 
             if (validateEdits(parsed)) {
                 pendingEdits = parsed.edits
-                return { ok: true, edits: pendingEdits }
+                return {
+                    ok: true,
+                    edits: pendingEdits,
+                    explanation
+                }
             }
+        } catch { }
+    }
+
+    if (explanation) {
+        return {
+            error: "AI output unusable",
+            explanation
         }
-    } catch { }
+    }
 
     // 🚨 FALLBACK: FORCE REPLACE
-    // If JSON fails, assume raw file output
+    // Only use fallback when no explanation is present
     if (files.length === 1) {
         pendingEdits = [{
             path: files[0].path,
