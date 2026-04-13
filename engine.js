@@ -1,37 +1,77 @@
+/**
+ * =========================
+ * Imports / Dependencies
+ * =========================
+ */
+
+// File system access (read/write project files)
 const fs = require("fs")
+
+// Path utilities (safe path resolution)
 const path = require("path")
 
-/* =========================
-   Fetch Setup
-========================= */
+
+/**
+ * =========================
+ * Fetch Setup
+ * =========================
+ *
+ * Uses global fetch if available (Node 18+),
+ * otherwise falls back to node-fetch.
+ */
 
 let fetchFn = global.fetch
 if (!fetchFn) {
     fetchFn = require("node-fetch")
 }
 
+// Ollama model to use
 const MODEL_NAME = "llama3"
 
-/* =========================
-   CONFIG
-========================= */
 
+/**
+ * =========================
+ * Config
+ * =========================
+ */
+
+// Max number of files to send to AI context
 const MAX_FILES = 10
+
+// (Currently unused) max preview length for file content
 const MAX_CONTENT_PREVIEW = 300
 
-/* =========================
-   STATE
-========================= */
 
+/**
+ * =========================
+ * Runtime State
+ * =========================
+ */
+
+// Root directory of the user's selected project
 let ACTIVE_ROOT = null
+
+// Cached file index (flat list of project structure)
 let FILE_INDEX = []
+
+// Edits proposed by AI but not yet applied
 let pendingEdits = []
+
+// Files selected during last edit operation (used for safety)
 let lastSelectedFiles = []
 
-/* =========================
-   ROOT MANAGEMENT
-========================= */
 
+/**
+ * =========================
+ * Root Management
+ * =========================
+ */
+
+/**
+ * setRoot
+ * Validates and sets the working directory for the engine.
+ * Also builds a file index for quick reference.
+ */
 function setRoot(folderPath) {
     if (!fs.existsSync(folderPath)) {
         throw new Error("Invalid folder path")
@@ -42,15 +82,26 @@ function setRoot(folderPath) {
     }
 
     ACTIVE_ROOT = path.resolve(folderPath)
+
+    // Build a recursive index of all files/folders
     FILE_INDEX = buildFileIndex(ACTIVE_ROOT)
 
     return { ok: true }
 }
 
-/* =========================
-   FILE INDEX
-========================= */
 
+/**
+ * =========================
+ * File Indexing
+ * =========================
+ */
+
+/**
+ * Recursively builds a flat list of all files and directories.
+ * Format:
+ *   [DIR] folder
+ *   [FILE] folder/file.js
+ */
 function buildFileIndex(dir, prefix = "") {
     let results = []
 
@@ -72,10 +123,17 @@ function buildFileIndex(dir, prefix = "") {
     return results
 }
 
-/* =========================
-   FILE UTILITIES
-========================= */
 
+/**
+ * =========================
+ * Path Safety Utilities
+ * =========================
+ */
+
+/**
+ * Ensures a path stays inside ACTIVE_ROOT.
+ * Prevents directory traversal attacks.
+ */
 function isSafePath(filePath) {
     const resolved = path.resolve(filePath)
     const root = path.resolve(ACTIVE_ROOT)
@@ -83,6 +141,10 @@ function isSafePath(filePath) {
     return resolved.startsWith(root) && !resolved.includes("..")
 }
 
+/**
+ * Converts a "virtual" path (from AI/user) into a real filesystem path.
+ * Throws if traversal outside root is detected.
+ */
 function toRealPath(vPath) {
     const cleaned = vPath.replace(/^\/+/, "")
     const resolved = path.resolve(ACTIVE_ROOT, cleaned)
@@ -94,10 +156,18 @@ function toRealPath(vPath) {
     return resolved
 }
 
-/* =========================
-   FILE READING
-========================= */
 
+/**
+ * =========================
+ * File Reading / Context
+ * =========================
+ */
+
+/**
+ * Recursively reads all files under a directory.
+ * Returns:
+ *   [{ path, content }]
+ */
 function readFolder(dir) {
     let results = []
 
@@ -113,27 +183,44 @@ function readFolder(dir) {
             try {
                 const content = fs.readFileSync(fullPath, "utf-8")
                 results.push({ path: fullPath, content })
-            } catch { }
+            } catch {
+                // Ignore unreadable files
+            }
         }
     }
 
     return results
 }
 
+/**
+ * Builds a formatted string context for AI.
+ * Each file is wrapped with markers.
+ */
 function buildContext(files) {
     return files
         .map(f => `=== FILE START: ${f.path} ===\n${f.content}\n=== FILE END ===`)
         .join("\n\n")
 }
 
-/* =========================
-   FILE SELECTION
-========================= */
 
+/**
+ * =========================
+ * File Selection Logic
+ * =========================
+ */
+
+/**
+ * Extracts explicit file references from user input.
+ * Example: "edit src/app.js"
+ */
 function extractExplicitFiles(text) {
     return text.match(/\b[\w\-.\\\/]+\.\w+\b/g) || []
 }
 
+/**
+ * Creates placeholder file objects when explicit files
+ * are mentioned but not found.
+ */
 function buildExplicitFilePlaceholders(paths) {
     return paths.map((p) => {
         const cleaned = p.replace(/^\/+/, "")
@@ -144,6 +231,12 @@ function buildExplicitFilePlaceholders(paths) {
     })
 }
 
+/**
+ * Scores files based on relevance to user input.
+ * Simple heuristic:
+ *   - filename match = high score
+ *   - content keyword matches = lower score
+ */
 function scoreFiles(userInput) {
     const files = readFolder(ACTIVE_ROOT)
     const input = userInput.toLowerCase()
@@ -171,10 +264,20 @@ function scoreFiles(userInput) {
         .filter(f => f.score > 0)
 }
 
-/* =========================
-   AI
-========================= */
 
+/**
+ * =========================
+ * AI Communication
+ * =========================
+ */
+
+/**
+ * Sends a request to the local Ollama API.
+ *
+ * @param {string} systemPrompt
+ * @param {string} userPrompt
+ * @param {number} temperature
+ */
 async function callAI(systemPrompt, userPrompt, temperature = 0) {
     try {
         const res = await fetchFn("http://localhost:11434/api/chat", {
@@ -194,14 +297,21 @@ async function callAI(systemPrompt, userPrompt, temperature = 0) {
         const data = await res.json()
         return data.message.content
     } catch {
+        // Failure = null (handled upstream)
         return null
     }
 }
 
-/* =========================
-   EDIT PARSING / VALIDATION
-========================= */
 
+/**
+ * =========================
+ * AI Output Parsing
+ * =========================
+ */
+
+/**
+ * Cleans malformed triple-quoted strings into valid JSON.
+ */
 function normalizeJsonCandidate(jsonText) {
     if (!jsonText) return jsonText
 
@@ -210,6 +320,12 @@ function normalizeJsonCandidate(jsonText) {
     })
 }
 
+/**
+ * Extracts:
+ *   - explanation (text)
+ *   - JSON edit plan
+ * from AI response.
+ */
 function extractJsonAndExplanation(text) {
     if (!text) return { explanation: null, jsonText: null }
 
@@ -226,6 +342,7 @@ function extractJsonAndExplanation(text) {
 
         const lastMatch = matches[matches.length - 1]
         const index = text.lastIndexOf(lastMatch)
+
         explanation = text.slice(0, index).trim()
         jsonText = lastMatch
     }
@@ -244,6 +361,9 @@ function extractJsonAndExplanation(text) {
     }
 }
 
+/**
+ * Validates AI-generated edit structure.
+ */
 function validateEdits(data) {
     if (!data) return false
     if (data.mode !== "edit") return false
@@ -256,10 +376,18 @@ function validateEdits(data) {
     )
 }
 
-/* =========================
-   EDIT APPLICATION
-========================= */
 
+/**
+ * =========================
+ * Edit Application
+ * =========================
+ */
+
+/**
+ * Applies edits to the filesystem with safety constraints:
+ * - Only allows edits on previously selected files
+ * - Prevents path traversal
+ */
 function applyEdits(edits) {
     const allowed = new Set(
         lastSelectedFiles.map(f => path.resolve(f.path))
@@ -299,24 +427,30 @@ function applyEdits(edits) {
                 fs.writeFileSync(fullPath, edit.content || "", "utf-8")
 
             } else if (edit.action === "replace") {
-                // ✅ ALWAYS allow full overwrite
+                // Full overwrite
                 fs.writeFileSync(fullPath, edit.content || "", "utf-8")
             }
 
-        } catch { }
+        } catch {
+            // Ignore individual edit failures
+        }
     }
 
     pendingEdits = []
     return { ok: true }
 }
 
-/* =========================
-   EDIT FLOW
-========================= */
+
+/**
+ * =========================
+ * Edit Flow (AI-driven)
+ * =========================
+ */
 
 async function runEditFlow(userText) {
     if (!ACTIVE_ROOT) throw new Error("Root not set")
 
+    // Step 1: determine relevant files
     const explicit = extractExplicitFiles(userText)
 
     let files
@@ -342,6 +476,7 @@ async function runEditFlow(userText) {
 
     const context = buildContext(files)
 
+    // Step 2: instruct AI to generate edits
     const systemPrompt = `
 You are a code editor.
 
@@ -368,6 +503,7 @@ Preferred JSON format:
 
     if (!reply) return { error: "AI failed" }
 
+    // Step 3: parse AI output
     const { explanation, jsonText } = extractJsonAndExplanation(reply)
 
     if (jsonText) {
@@ -376,15 +512,19 @@ Preferred JSON format:
 
             if (validateEdits(parsed)) {
                 pendingEdits = parsed.edits
+
                 return {
                     ok: true,
                     edits: pendingEdits,
                     explanation
                 }
             }
-        } catch { }
+        } catch {
+            // JSON parse failed
+        }
     }
 
+    // Step 4: fallback behavior
     if (explanation) {
         return {
             error: "AI output unusable",
@@ -392,6 +532,7 @@ Preferred JSON format:
         }
     }
 
+    // Single-file fallback = replace entire file
     if (files.length === 1) {
         pendingEdits = [{
             path: files[0].path,
@@ -405,9 +546,12 @@ Preferred JSON format:
     return { error: "AI output unusable" }
 }
 
-/* =========================
-   CHAT FLOW
-========================= */
+
+/**
+ * =========================
+ * Chat Flow (non-edit)
+ * =========================
+ */
 
 async function runChat(userText) {
     if (!ACTIVE_ROOT) throw new Error("Root not set")
@@ -431,9 +575,12 @@ async function runChat(userText) {
     return { reply: reply || "AI failed to respond" }
 }
 
-/* =========================
-   EDIT STATE ACCESS
-========================= */
+
+/**
+ * =========================
+ * Edit State Access
+ * =========================
+ */
 
 function getPendingEdits() {
     return pendingEdits
@@ -444,9 +591,12 @@ function clearPendingEdits() {
     lastSelectedFiles = []
 }
 
-/* =========================
-   EXPORTS
-========================= */
+
+/**
+ * =========================
+ * Exports
+ * =========================
+ */
 
 module.exports = {
     setRoot,

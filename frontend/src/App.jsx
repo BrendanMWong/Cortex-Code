@@ -3,12 +3,23 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import './App.css'
 
+/**
+ * =========================
+ * Backend API Base URL
+ * =========================
+ */
 const API_URL = "http://localhost:3001"
 
-/* =========================
-   Reusable UI Components
-========================= */
 
+/**
+ * =========================
+ * Reusable UI Component
+ * =========================
+ *
+ * CopyButton
+ * - Copies text to clipboard
+ * - Shows transient "Copied" state
+ */
 function CopyButton({ text, index, copiedIndex, onCopy, label }) {
   return (
     <div className="copyWrapper">
@@ -26,35 +37,63 @@ function CopyButton({ text, index, copiedIndex, onCopy, label }) {
   )
 }
 
-/* =========================
-   Main App
-========================= */
 
+/**
+ * =========================
+ * Main Application Component
+ * =========================
+ */
 function App() {
-  /* -------- State -------- */
+
+  /**
+   * =========================
+   * State Management
+   * =========================
+   */
+
+  // Chat input field
   const [input, setInput] = useState("")
+
+  // Chat message history (user + assistant)
   const [messages, setMessages] = useState([])
+
+  // Pending AI-generated edits
   const [edits, setEdits] = useState(null)
 
+  // Workspace root folder path
   const [rootPath, setRootPath] = useState("")
+
+  // Status message for root updates
   const [rootStatus, setRootStatus] = useState(null)
 
+  // UI state: loading indicator for AI calls
   const [isLoading, setIsLoading] = useState(false)
+
+  // Global error state
   const [error, setError] = useState(null)
 
+  // Clipboard feedback tracking
   const [copiedIndex, setCopiedIndex] = useState(null)
+
+  // Help modal visibility
   const [showHelp, setShowHelp] = useState(false)
 
+  // Used to auto-scroll chat view
   const chatEndRef = useRef(null)
 
-  /* -------- Effects -------- */
 
-  // auto scroll message view when chat or edit results change
+  /**
+   * =========================
+   * Side Effects
+   * =========================
+   */
+
+  // Auto-scroll chat to latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
   }, [messages, isLoading, edits])
 
-  // load saved root from localStorage
+  // Load saved workspace root from localStorage
   useEffect(() => {
     const savedRoot = localStorage.getItem("rootPath")
     if (savedRoot) {
@@ -62,7 +101,7 @@ function App() {
     }
   }, [])
 
-  // optionally auto-apply saved root to backend
+  // Sync saved root with backend on startup
   useEffect(() => {
     const savedRoot = localStorage.getItem("rootPath")
     if (savedRoot) {
@@ -70,22 +109,23 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: savedRoot })
-      }).catch(() => {})
+      }).catch(() => { })
     }
   }, [])
 
-  /* =========================
-     API Helpers
-  ========================= */
+
+  /**
+   * =========================
+   * API Helpers
+   * =========================
+   */
 
   async function post(endpoint, body) {
-    const res = await fetch(`${API_URL}${endpoint}`, {
+    return fetch(`${API_URL}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body || {})
     })
-
-    return res
   }
 
   async function postJSON(endpoint, body) {
@@ -93,9 +133,12 @@ function App() {
     return res.json()
   }
 
-  /* =========================
-     Chat Logic
-  ========================= */
+
+  /**
+   * =========================
+   * Chat Flow
+   * =========================
+   */
 
   async function sendChat() {
     if (!input.trim()) return
@@ -103,8 +146,10 @@ function App() {
     setError(null)
     setEdits(null)
 
+    // Append user message immediately
     const userMessage = { role: "user", content: input }
     setMessages(prev => [...prev, userMessage])
+
     setIsLoading(true)
 
     try {
@@ -125,9 +170,12 @@ function App() {
     setIsLoading(false)
   }
 
-  /* =========================
-     Edit Logic
-  ========================= */
+
+  /**
+   * =========================
+   * Edit Flow
+   * =========================
+   */
 
   async function sendEdit() {
     setError(null)
@@ -140,6 +188,7 @@ function App() {
         return
       }
 
+      // Optional explanation message from AI
       if (data.explanation) {
         setMessages(prev => [
           ...prev,
@@ -147,6 +196,7 @@ function App() {
         ])
       }
 
+      // Store proposed edits for review UI
       if (data.edits) {
         setEdits(data.edits)
       } else {
@@ -158,6 +208,9 @@ function App() {
     }
   }
 
+  /**
+   * Apply approved edits to filesystem
+   */
   async function applyEdits() {
     await post("/apply-edits", { edits })
 
@@ -169,6 +222,9 @@ function App() {
     ])
   }
 
+  /**
+   * Reject all pending edits
+   */
   async function rejectEdits() {
     await post("/reject-edits")
 
@@ -180,9 +236,12 @@ function App() {
     ])
   }
 
-  /* =========================
-     Root Logic
-  ========================= */
+
+  /**
+   * =========================
+   * Workspace Root Handling
+   * =========================
+   */
 
   async function handleUpdateRoot() {
     try {
@@ -193,13 +252,13 @@ function App() {
         throw new Error(err.error || "Invalid path")
       }
 
-      // save to localStorage
       localStorage.setItem("rootPath", rootPath)
 
       setRootStatus({
         type: "success",
         message: "Root updated successfully"
       })
+
     } catch (err) {
       setRootStatus({
         type: "error",
@@ -208,23 +267,31 @@ function App() {
     }
   }
 
-  /* =========================
-     UI Logic
-  ========================= */
+
+  /**
+   * =========================
+   * Clipboard Utility
+   * =========================
+   */
 
   async function handleCopy(text, index) {
     try {
       await navigator.clipboard.writeText(text)
+
       setCopiedIndex(index)
       setTimeout(() => setCopiedIndex(null), 1200)
+
     } catch (e) {
       console.error("Copy failed", e)
     }
   }
 
-  /* =========================
-     Render Helpers
-  ========================= */
+
+  /**
+   * =========================
+   * Message Renderer
+   * =========================
+   */
 
   function renderMessage(msg, i) {
     const isUser = msg.role === "user"
@@ -266,9 +333,12 @@ function App() {
     )
   }
 
-  /* =========================
-     JSX
-  ========================= */
+
+  /**
+   * =========================
+   * JSX Render
+   * =========================
+   */
 
   return (
     <div className="appContainer">
@@ -283,6 +353,7 @@ function App() {
           </button>
         </div>
       </div>
+
 
       {/* HELP MODAL */}
       {showHelp && (
@@ -318,7 +389,8 @@ function App() {
         </div>
       )}
 
-      {/* CHAT */}
+
+      {/* CHAT WINDOW */}
       <div className="chatStream">
         {messages.map(renderMessage)}
 
@@ -333,7 +405,8 @@ function App() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* EDIT PANEL */}
+
+      {/* EDIT PREVIEW PANEL */}
       {edits && (
         <div className="editPanel">
           <div className="panelHeader">Proposed Changes</div>
@@ -342,6 +415,7 @@ function App() {
             <div key={i} className="editItem">
               <div className="editPath">{e.path}</div>
               <div className="editAction">{e.action}</div>
+
               <pre className="editContent">
                 {e.content || ""}
               </pre>
@@ -359,7 +433,8 @@ function App() {
         </div>
       )}
 
-      {/* INPUT */}
+
+      {/* INPUT BAR */}
       <div className="inputBar">
         <textarea
           rows={3}
@@ -374,7 +449,8 @@ function App() {
         </div>
       </div>
 
-      {/* ROOT */}
+
+      {/* ROOT CONFIGURATION */}
       <div className="rootSection">
         <div className="panelHeader">Workspace Root</div>
 
@@ -394,6 +470,7 @@ function App() {
           </div>
         )}
       </div>
+
     </div>
   )
 }
