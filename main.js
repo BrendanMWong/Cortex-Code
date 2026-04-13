@@ -13,6 +13,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    title: "Cortex Code",
+    icon: path.join(__dirname, "frontend/dist/favicon.ico"),
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
