@@ -36,12 +36,14 @@
     "appId": "com.cortex.app",
     "productName": "Cortex Code",
     "icon": "frontend/public/favicon.ico",
+    "asar": false,
     "files": [
       "main.js",
       "server.js",
       "engine.js",
       "frontend/dist/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/**/*"
     ],
     "win": {
       "target": "nsis"

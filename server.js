@@ -3,6 +3,7 @@ const cors = require("cors")
 const engine = require("./engine")
 
 const app = express()
+let currentServer = null
 
 /* =========================
    Middleware
@@ -105,8 +106,44 @@ app.use((err, req, res, next) => {
    Start Server
 ========================= */
 
-const PORT = 3001
+function startServer(port = 3001) {
+    return new Promise((resolve, reject) => {
+        if (currentServer) {
+            return resolve(currentServer)
+        }
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`)
-})
+        currentServer = app.listen(port, () => {
+            console.log(`Server running on http://localhost:${port}`)
+            resolve(currentServer)
+        })
+
+        currentServer.on("error", (err) => {
+            currentServer = null
+            reject(err)
+        })
+    })
+}
+
+function stopServer() {
+    if (!currentServer) return
+
+    currentServer.close((err) => {
+        if (err) {
+            console.error("Error closing server:", err)
+        }
+    })
+
+    currentServer = null
+}
+
+if (require.main === module) {
+    startServer().catch((err) => {
+        console.error(err)
+        process.exit(1)
+    })
+}
+
+module.exports = {
+    startServer,
+    stopServer
+}

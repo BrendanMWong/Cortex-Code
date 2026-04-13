@@ -1,12 +1,11 @@
 const { app, BrowserWindow, Menu } = require("electron")
 const path = require("path")
 const { spawn } = require("child_process")
+const { startServer, stopServer } = require("./server")
 
 app.commandLine.appendSwitch("disable-features", "GpuDiskCache")
-app.setPath("userData", path.join(__dirname, "userdata"))
 
 let mainWindow
-let serverProcess
 let ollamaProcess
 
 function createWindow() {
@@ -32,18 +31,12 @@ function createWindow() {
   )
 }
 
-function startBackend() {
-  // Start Express server with hidden console windows on Windows
-  serverProcess = spawn("node", ["server.js"], {
-    cwd: __dirname,
-    shell: false,
-    stdio: "ignore",
-    windowsHide: true
-  })
-
-  serverProcess.on("error", (err) => {
+async function startBackend() {
+  try {
+    await startServer(3001)
+  } catch (err) {
     console.error("[server] failed to start:", err)
-  })
+  }
 }
 
 function startOllama() {
@@ -59,17 +52,14 @@ function startOllama() {
   })
 }
 
-app.whenReady().then(() => {
-  startBackend()
+app.whenReady().then(async () => {
+  await startBackend()
   startOllama()
   createWindow()
 })
 
 app.on("before-quit", () => {
-  if (serverProcess) {
-    console.log("[server] shutting down...")
-    serverProcess.kill()
-  }
+  stopServer()
 
   if (ollamaProcess) {
     console.log("[ollama] shutting down...")
