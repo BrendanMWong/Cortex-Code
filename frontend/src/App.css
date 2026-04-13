@@ -145,6 +145,16 @@
   justify-content: flex-end;
 }
 
+.messageActions.left {
+  justify-content: flex-start;
+}
+
+.messageActions.left .copyTooltip {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+
 .messageActions.right .copyTooltip {
   left: auto;
   right: 0;
@@ -182,7 +192,8 @@
   left: 50%;
   transform: translateX(-50%);
 
-  max-width: 200px;
+  min-width: max-content;
+  max-width: none;
   padding: 4px 6px;
 
   font-size: 11px;
@@ -191,7 +202,10 @@
   background: var(--code-bg);
   color: var(--text-h);
 
-  white-space: nowrap;
+  display: inline-flex;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
 
   opacity: 0;
   visibility: hidden;
